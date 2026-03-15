@@ -1,9 +1,12 @@
 {
     "id": "{E7A3C8F1-5B2D-4E6A-9F8C-1D3B5A7E9F02}",
-    "author": "Roman (Community)",
+    "author": "marom300",
     "name": "IPSWeatherWidget",
     "url": "https://github.com/marom300/IPSWeatherWidget",
     "compatibility": {
         "version": "5.0"
-    }
+    },
+    "version": "1.0",
+    "build": 0,
+    "date": 0
 }
