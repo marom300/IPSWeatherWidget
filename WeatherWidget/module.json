@@ -1,0 +1,12 @@
+{
+    "id": "{A4B7E2C9-8D1F-4A3E-B6C5-2F9D8E7A1B04}",
+    "name": "WeatherWidget",
+    "type": 3,
+    "vendor": "Community",
+    "aliases": [],
+    "url": "https://github.com/roman/IPSWeatherWidget",
+    "parentRequirements": [],
+    "childRequirements": [],
+    "implemented": [],
+    "prefix": "WTR"
+}
