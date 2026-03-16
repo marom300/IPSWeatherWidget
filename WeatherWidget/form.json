@@ -22,7 +22,7 @@
                         { "caption": "Netatmo Weather (geplant)", "value": 4 },
                         { "caption": "MET Norway (direkte API)", "value": 5 }
                     ],
-                    "onChange": "$isMET = ($SourceType == 5); $this->UpdateFormField('InstanceRow', 'visible', !$isMET); $this->UpdateFormField('METConfigRow', 'visible', $isMET);"
+                    "onChange": "IPS_RequestAction($id, 'SourceTypeChanged', $SourceType);"
                 },
                 {
                     "type": "RowLayout",

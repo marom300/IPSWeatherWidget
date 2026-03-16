@@ -218,6 +218,23 @@ class WeatherWidget extends IPSModuleStrict
         return json_encode($form);
     }
 
+    /**
+     * RequestAction: Reagiert auf onChange-Events aus dem Formular
+     */
+    public function RequestAction(string $ident, mixed $value): void
+    {
+        switch ($ident) {
+            case 'SourceTypeChanged':
+                $isMET = ((int) $value === self::PROVIDER_METNORWAY);
+                $this->UpdateFormField('InstanceRow', 'visible', !$isMET);
+                $this->UpdateFormField('METConfigRow', 'visible', $isMET);
+                break;
+            default:
+                parent::RequestAction($ident, $value);
+                break;
+        }
+    }
+
     public function ApplyChanges(): void
     {
         parent::ApplyChanges();
