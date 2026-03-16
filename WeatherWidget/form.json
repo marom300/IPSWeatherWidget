@@ -7,7 +7,7 @@
             "items": [
                 {
                     "type": "Label",
-                    "caption": "Wetter-Modul Typ auswählen, Instanz zuweisen und Variablen automatisch erkennen. Für nicht unterstützte Module die Variablen unten manuell zuweisen."
+                    "caption": "Wetter-Modul Typ auswählen, Instanz zuweisen und Variablen automatisch erkennen. MET Norway benötigt keine Instanz – nur Koordinaten eingeben. Für nicht unterstützte Module die Variablen unten manuell zuweisen."
                 },
                 {
                     "type": "RowLayout",
@@ -22,7 +22,8 @@
                                 { "caption": "OpenWeather OneCall", "value": 1 },
                                 { "caption": "Weather Underground", "value": 2 },
                                 { "caption": "Froggit / Ecowitt (geplant)", "value": 3 },
-                                { "caption": "Netatmo Weather (geplant)", "value": 4 }
+                                { "caption": "Netatmo Weather (geplant)", "value": 4 },
+                                { "caption": "MET Norway (direkte API)", "value": 5 }
                             ]
                         },
                         {
@@ -40,6 +41,37 @@
                                 { "caption": "Heute (D0)", "value": 0 },
                                 { "caption": "Morgen (D1)", "value": 1 }
                             ]
+                        }
+                    ]
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "ValidationTextBox",
+                            "name": "METLatitude",
+                            "caption": "Breitengrad (Lat)",
+                            "width": "200px"
+                        },
+                        {
+                            "type": "ValidationTextBox",
+                            "name": "METLongitude",
+                            "caption": "Längengrad (Lon)",
+                            "width": "200px"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "METAltitude",
+                            "caption": "Höhe ü. NN",
+                            "minimum": 0,
+                            "maximum": 9000,
+                            "suffix": "m",
+                            "width": "200px"
+                        },
+                        {
+                            "type": "Label",
+                            "caption": "← Nur für MET Norway relevant. Koordinaten z.B. von Google Maps.",
+                            "italic": true
                         }
                     ]
                 },

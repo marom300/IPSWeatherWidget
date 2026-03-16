@@ -105,6 +105,7 @@ class WeatherWidget extends IPSModuleStrict
     private const PROVIDER_WUNDERGROUND = 2;
     private const PROVIDER_FROGGIT = 3;
     private const PROVIDER_NETATMO = 4;
+    private const PROVIDER_METNORWAY = 5;
 
     // OpenWeather Ident-Mapping: Widget-Feld → mögliche Ident-Prefixes (+ Tag-Suffix)
     private const OPENWEATHER_MAP = [
@@ -131,9 +132,14 @@ class WeatherWidget extends IPSModuleStrict
         parent::Create();
 
         // Quell-Instanz für Auto-Erkennung
-        $this->RegisterPropertyInteger('SourceType', 0); // 0=nicht gewählt, 1=OpenWeather, 2=Wunderground, 3=Froggit, 4=Netatmo
+        $this->RegisterPropertyInteger('SourceType', 0); // 0=nicht gewählt, 1=OpenWeather, 2=Wunderground, 3=Froggit, 4=Netatmo, 5=MET Norway
         $this->RegisterPropertyInteger('SourceInstance', 0);
         $this->RegisterPropertyInteger('StartDay', 0); // 0=D0 (heute), 1=D1 (morgen)
+
+        // MET Norway Einstellungen (kein IPS-Modul nötig, direkte API-Anbindung)
+        $this->RegisterPropertyString('METLatitude', '48.2082');
+        $this->RegisterPropertyString('METLongitude', '16.3738');
+        $this->RegisterPropertyInteger('METAltitude', 171);
 
         // Allgemeine Einstellungen
         $this->RegisterPropertyInteger('DayCount', 6);
@@ -215,6 +221,12 @@ class WeatherWidget extends IPSModuleStrict
         $showRain = $this->ReadPropertyBoolean('ShowRain');
         $showWind = $this->ReadPropertyBoolean('ShowWind');
 
+        // Bei MET Norway: Daten von API abrufen bevor wir rendern
+        $sourceType = $this->ReadPropertyInteger('SourceType');
+        if ($sourceType === self::PROVIDER_METNORWAY) {
+            $this->FetchMETNorway();
+        }
+
         // Tages-Daten sammeln
         $days = [];
         for ($i = 1; $i <= $dayCount; $i++) {
@@ -277,25 +289,32 @@ class WeatherWidget extends IPSModuleStrict
             return 'Bitte zuerst einen Wetter-Modul Typ auswählen und Konfiguration speichern.';
         }
 
-        $sourceID = $this->ReadPropertyInteger('SourceInstance');
-        if ($sourceID === 0 || !IPS_ObjectExists($sourceID)) {
-            return 'Bitte zuerst eine Wetter-Instanz auswählen und Konfiguration speichern.';
-        }
-
         $dayCount = $this->ReadPropertyInteger('DayCount');
         $startDay = $this->ReadPropertyInteger('StartDay');
 
-        // Alle Kind-Variablen mit Idents einlesen
-        $childIDs = IPS_GetChildrenIDs($sourceID);
-        $identMap = []; // ident (lowercase) → varID
-        foreach ($childIDs as $childID) {
-            $obj = IPS_GetObject($childID);
-            if ($obj['ObjectIdent'] !== '') {
-                $identMap[strtolower($obj['ObjectIdent'])] = $childID;
+        // MET Norway braucht keine Quell-Instanz
+        if ($sourceType === self::PROVIDER_METNORWAY) {
+            $identMap = [];
+        } else {
+            $sourceID = $this->ReadPropertyInteger('SourceInstance');
+            if ($sourceID === 0 || !IPS_ObjectExists($sourceID)) {
+                return 'Bitte zuerst eine Wetter-Instanz auswählen und Konfiguration speichern.';
+            }
+
+            // Alle Kind-Variablen mit Idents einlesen
+            $childIDs = IPS_GetChildrenIDs($sourceID);
+            $identMap = []; // ident (lowercase) → varID
+            foreach ($childIDs as $childID) {
+                $obj = IPS_GetObject($childID);
+                if ($obj['ObjectIdent'] !== '') {
+                    $identMap[strtolower($obj['ObjectIdent'])] = $childID;
+                }
             }
         }
 
         switch ($sourceType) {
+            case self::PROVIDER_METNORWAY:
+                return $this->AutoConfigureMETNorway($dayCount);
             case self::PROVIDER_WUNDERGROUND:
                 return $this->AutoConfigureWunderground($identMap, $dayCount, $startDay);
             case self::PROVIDER_OPENWEATHER:
@@ -432,6 +451,306 @@ class WeatherWidget extends IPSModuleStrict
     }
 
     /**
+     * Auto-Erkennung für MET Norway
+     * Erstellt eigene Kind-Variablen und füllt sie mit API-Daten
+     */
+    private function AutoConfigureMETNorway(int $dayCount): string
+    {
+        $lat = $this->ReadPropertyString('METLatitude');
+        $lon = $this->ReadPropertyString('METLongitude');
+        $alt = $this->ReadPropertyInteger('METAltitude');
+
+        if ($lat === '' || $lon === '') {
+            return 'Bitte Breitengrad und Längengrad eingeben.';
+        }
+
+        // Kind-Variablen erstellen (idempotent via RegisterVariable)
+        $fields = [
+            'Begin'     => ['Int',    'Beginn',       0],
+            'TempMin'   => ['Float',  'Temp Min °C',  0],
+            'TempMax'   => ['Float',  'Temp Max °C',  0],
+            'Icon'      => ['String', 'Icon-Code',    0],
+            'RainMM'    => ['Float',  'Regen mm',     0],
+            'RainPct'   => ['Float',  'Regen %',      0],
+            'WindSpeed' => ['Float',  'Wind km/h',    0],
+        ];
+
+        $assignCount = 0;
+        for ($i = 1; $i <= $dayCount; $i++) {
+            foreach ($fields as $field => [$type, $label, $profile]) {
+                $ident = "MET_D{$i}_{$field}";
+                $name = "Tag {$i} {$label}";
+
+                switch ($type) {
+                    case 'Int':
+                        $this->RegisterVariableInteger($ident, $name, '', 100 + ($i * 10));
+                        break;
+                    case 'Float':
+                        $this->RegisterVariableFloat($ident, $name, '', 100 + ($i * 10));
+                        break;
+                    case 'String':
+                        $this->RegisterVariableString($ident, $name, '', 100 + ($i * 10));
+                        break;
+                }
+
+                $varID = $this->GetIDForIdent($ident);
+                IPS_SetProperty($this->InstanceID, "Day{$i}_{$field}", $varID);
+                $assignCount++;
+            }
+        }
+
+        IPS_ApplyChanges($this->InstanceID);
+
+        // Initiale Daten abrufen
+        $fetchResult = $this->FetchMETNorway();
+
+        $total = $dayCount * count($fields);
+        $msg = "{$assignCount} von {$total} Variablen erstellt und zugewiesen (MET Norway).";
+        $msg .= "\n\nStandort: Lat={$lat}, Lon={$lon}, Alt={$alt}m";
+        $msg .= "\nAPI: api.met.no/weatherapi/locationforecast/2.0/complete";
+        $msg .= "\n\nDatenabruf: {$fetchResult}";
+        $msg .= "\n\nHinweis: Daten werden bei jedem Widget-Update automatisch von MET Norway abgerufen.";
+
+        $this->SendDebug('AutoConfigure', $msg, 0);
+        return $msg;
+    }
+
+    /**
+     * MET Norway API abrufen und Kind-Variablen füllen
+     */
+    public function FetchMETNorway(): string
+    {
+        $lat = $this->ReadPropertyString('METLatitude');
+        $lon = $this->ReadPropertyString('METLongitude');
+        $alt = $this->ReadPropertyInteger('METAltitude');
+        $dayCount = $this->ReadPropertyInteger('DayCount');
+
+        if ($lat === '' || $lon === '') {
+            return 'Keine MET Norway Koordinaten konfiguriert.';
+        }
+
+        // API-URL zusammenbauen (complete-Endpoint für Temp-Min/Max und Rain-%)
+        $url = "https://api.met.no/weatherapi/locationforecast/2.0/complete"
+             . "?lat={$lat}&lon={$lon}&altitude={$alt}";
+
+        // User-Agent ist PFLICHT bei MET Norway, sonst 403!
+        $opts = [
+            'http' => [
+                'header'  => "User-Agent: IPSymcon-WeatherWidget/1.0 github.com/IPSWeatherWidget\r\n",
+                'timeout' => 15,
+            ],
+        ];
+        $ctx = stream_context_create($opts);
+
+        $json = @file_get_contents($url, false, $ctx);
+        if ($json === false) {
+            $this->SendDebug('MET Norway', 'API-Abruf fehlgeschlagen', 0);
+            return 'API-Abruf fehlgeschlagen. Prüfe Koordinaten und Internetverbindung.';
+        }
+
+        $data = json_decode($json, true);
+        if (!isset($data['properties']['timeseries'])) {
+            $this->SendDebug('MET Norway', 'Ungültige API-Antwort', 0);
+            return 'Ungültige API-Antwort.';
+        }
+
+        $timeseries = $data['properties']['timeseries'];
+
+        // Timeseries nach Tagen gruppieren (lokale Zeitzone)
+        $dailyData = [];
+        foreach ($timeseries as $entry) {
+            $utcTime = strtotime($entry['time']);
+            $dayKey = date('Y-m-d', $utcTime);
+            $hour = (int) date('H', $utcTime);
+
+            if (!isset($dailyData[$dayKey])) {
+                $dailyData[$dayKey] = [
+                    'date'      => $dayKey,
+                    'begin'     => strtotime($dayKey . ' 00:00:00'),
+                    'temps'     => [],
+                    'tempMin'   => PHP_FLOAT_MAX,
+                    'tempMax'   => PHP_FLOAT_MIN,
+                    'rainTotal' => 0.0,
+                    'rainPct'   => 0.0,
+                    'windMax'   => 0.0,
+                    'icon'      => '',
+                ];
+            }
+
+            $instant = $entry['data']['instant']['details'] ?? [];
+
+            // Temperatur sammeln
+            if (isset($instant['air_temperature'])) {
+                $dailyData[$dayKey]['temps'][] = $instant['air_temperature'];
+                $dailyData[$dayKey]['tempMin'] = min($dailyData[$dayKey]['tempMin'], $instant['air_temperature']);
+                $dailyData[$dayKey]['tempMax'] = max($dailyData[$dayKey]['tempMax'], $instant['air_temperature']);
+            }
+
+            // Temp Min/Max aus next_6_hours bevorzugen (genauer)
+            if (isset($entry['data']['next_6_hours']['details'])) {
+                $n6 = $entry['data']['next_6_hours']['details'];
+                if (isset($n6['air_temperature_min'])) {
+                    $dailyData[$dayKey]['tempMin'] = min($dailyData[$dayKey]['tempMin'], $n6['air_temperature_min']);
+                }
+                if (isset($n6['air_temperature_max'])) {
+                    $dailyData[$dayKey]['tempMax'] = max($dailyData[$dayKey]['tempMax'], $n6['air_temperature_max']);
+                }
+            }
+
+            // Niederschlag: aus next_1_hours summieren, fallback next_6_hours
+            if (isset($entry['data']['next_1_hours']['details']['precipitation_amount'])) {
+                $dailyData[$dayKey]['rainTotal'] += $entry['data']['next_1_hours']['details']['precipitation_amount'];
+            }
+
+            // Regenwahrscheinlichkeit: Maximum des Tages
+            if (isset($entry['data']['next_1_hours']['details']['probability_of_precipitation'])) {
+                $dailyData[$dayKey]['rainPct'] = max(
+                    $dailyData[$dayKey]['rainPct'],
+                    $entry['data']['next_1_hours']['details']['probability_of_precipitation']
+                );
+            }
+            if (isset($entry['data']['next_6_hours']['details']['probability_of_precipitation'])) {
+                $dailyData[$dayKey]['rainPct'] = max(
+                    $dailyData[$dayKey]['rainPct'],
+                    $entry['data']['next_6_hours']['details']['probability_of_precipitation']
+                );
+            }
+
+            // Wind: Maximum (m/s → km/h)
+            if (isset($instant['wind_speed'])) {
+                $windKmh = $instant['wind_speed'] * 3.6;
+                $dailyData[$dayKey]['windMax'] = max($dailyData[$dayKey]['windMax'], $windKmh);
+            }
+
+            // Icon: Symbol von ~12:00 Uhr bevorzugen (repräsentativste Tageszeit)
+            if ($hour >= 11 && $hour <= 13 && $dailyData[$dayKey]['icon'] === '') {
+                $symbol = $entry['data']['next_6_hours']['summary']['symbol_code']
+                       ?? $entry['data']['next_1_hours']['summary']['symbol_code']
+                       ?? '';
+                if ($symbol !== '') {
+                    $dailyData[$dayKey]['icon'] = $symbol;
+                }
+            }
+        }
+
+        // Fallback-Icon: Falls kein 12-Uhr-Symbol, erstes verfügbares nehmen
+        foreach ($dailyData as $dayKey => &$day) {
+            if ($day['icon'] === '') {
+                // Nochmal durch Timeseries für diesen Tag
+                foreach ($timeseries as $entry) {
+                    $entryDay = date('Y-m-d', strtotime($entry['time']));
+                    if ($entryDay !== $dayKey) {
+                        continue;
+                    }
+                    $symbol = $entry['data']['next_6_hours']['summary']['symbol_code']
+                           ?? $entry['data']['next_1_hours']['summary']['symbol_code']
+                           ?? '';
+                    if ($symbol !== '') {
+                        $day['icon'] = $symbol;
+                        break;
+                    }
+                }
+            }
+        }
+        unset($day);
+
+        // Tage sortieren und in Kind-Variablen schreiben
+        ksort($dailyData);
+        $dayIndex = 0;
+        $today = date('Y-m-d');
+
+        foreach ($dailyData as $dayKey => $day) {
+            // Nur ab heute zählen
+            if ($dayKey < $today) {
+                continue;
+            }
+
+            $dayIndex++;
+            if ($dayIndex > $dayCount) {
+                break;
+            }
+
+            // Werte in registrierte Variablen schreiben
+            $this->SetValueIfExists("MET_D{$dayIndex}_Begin", $day['begin']);
+            $this->SetValueIfExists("MET_D{$dayIndex}_TempMin", round($day['tempMin'], 1));
+            $this->SetValueIfExists("MET_D{$dayIndex}_TempMax", round($day['tempMax'], 1));
+            $this->SetValueIfExists("MET_D{$dayIndex}_Icon", $day['icon']);
+            $this->SetValueIfExists("MET_D{$dayIndex}_RainMM", round($day['rainTotal'], 1));
+            $this->SetValueIfExists("MET_D{$dayIndex}_RainPct", round($day['rainPct'], 1));
+            $this->SetValueIfExists("MET_D{$dayIndex}_WindSpeed", round($day['windMax'], 1));
+        }
+
+        $this->SendDebug('MET Norway', "API-Daten abgerufen: {$dayIndex} Tage verarbeitet", 0);
+        return "{$dayIndex} Tage erfolgreich abgerufen.";
+    }
+
+    /**
+     * Hilfsfunktion: Wert in Variable schreiben, wenn Ident existiert
+     */
+    private function SetValueIfExists(string $ident, $value): void
+    {
+        $id = @$this->GetIDForIdent($ident);
+        if ($id !== false && $id > 0) {
+            $this->SetValue($ident, $value);
+        }
+    }
+
+    /**
+     * MET Norway Symbol-Code → Bas Milius Icon-Name
+     * Erkennt Codes wie "clearsky_day", "rain", "partlycloudy_night" etc.
+     */
+    private function MapMETNorwayIcon(string $symbolCode): ?string
+    {
+        // Suffix abtrennen (_day, _night, _polartwilight)
+        $isNight = str_contains($symbolCode, '_night');
+        $dn = $isNight ? 'night' : 'day';
+        $base = preg_replace('/_(?:day|night|polartwilight)$/', '', $symbolCode);
+
+        // Klar / Bewölkung
+        if ($base === 'clearsky') {
+            return "clear-{$dn}";
+        }
+        if ($base === 'fair' || $base === 'partlycloudy') {
+            return "partly-cloudy-{$dn}";
+        }
+        if ($base === 'cloudy') {
+            return 'cloudy';
+        }
+        if ($base === 'fog') {
+            return 'mist';
+        }
+
+        // Gewitter-Varianten
+        if (str_contains($base, 'thunder')) {
+            $precip = (str_contains($base, 'snow') || str_contains($base, 'sleet')) ? 'snow' : 'rain';
+            return "thunderstorms-{$dn}-{$precip}";
+        }
+
+        // Schnee
+        if (str_contains($base, 'snow')) {
+            return "overcast-{$dn}-snow";
+        }
+
+        // Schneeregen
+        if (str_contains($base, 'sleet')) {
+            return "overcast-{$dn}-sleet";
+        }
+
+        // Leichter Regen / Niesel
+        if (str_contains($base, 'light') && str_contains($base, 'rain')) {
+            return "overcast-{$dn}-drizzle";
+        }
+
+        // Regen
+        if (str_contains($base, 'rain')) {
+            return "overcast-{$dn}-rain";
+        }
+
+        // Unbekannt
+        return null;
+    }
+
+    /**
      * Daten eines einzelnen Tages auslesen
      */
     private function ReadDayData(int $dayNum): ?array
@@ -505,7 +824,13 @@ class WeatherWidget extends IPSModuleStrict
             return self::ICON_BASE . '/' . self::ICON_MAP[$iconValue] . '.svg';
         }
 
-        // 2. Text-Vorhersage (z.B. "Bewölkt", "Partly Cloudy") → Keyword-Matching
+        // 2. MET Norway Symbol-Code (z.B. "clearsky_day", "rain", "partlycloudy_night")
+        $metIcon = $this->MapMETNorwayIcon($iconValue);
+        if ($metIcon !== null) {
+            return self::ICON_BASE . '/' . $metIcon . '.svg';
+        }
+
+        // 3. Text-Vorhersage (z.B. "Bewölkt", "Partly Cloudy") → Keyword-Matching
         $lower = mb_strtolower($iconValue, 'UTF-8');
         foreach (self::FORECAST_TEXT_MAP as $keyword => $iconName) {
             if (mb_strpos($lower, $keyword) !== false) {
@@ -513,12 +838,12 @@ class WeatherWidget extends IPSModuleStrict
             }
         }
 
-        // 3. Fallback: OWM-URL (falls doch ein unbekannter Code)
+        // 4. Fallback: OWM-URL (falls doch ein unbekannter Code)
         if (preg_match('/^\d{2}[dn]$/', $iconValue)) {
             return "https://openweathermap.org/img/wn/{$iconValue}@2x.png";
         }
 
-        // 4. Unbekannter Text → generisches Wolken-Icon
+        // 5. Unbekannter Text → generisches Wolken-Icon
         return self::ICON_BASE . '/not-available.svg';
     }
 
