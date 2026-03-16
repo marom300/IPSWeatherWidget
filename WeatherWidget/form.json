@@ -2,12 +2,12 @@
     "elements": [
         {
             "type": "ExpansionPanel",
-            "caption": "🔍 Auto-Erkennung (OpenWeather)",
+            "caption": "Auto-Erkennung (OpenWeather)",
             "expanded": true,
             "items": [
                 {
                     "type": "Label",
-                    "caption": "Wähle deine OpenWeatherOneCall-Instanz aus und klicke 'Variablen erkennen'. Alle Felder werden automatisch befüllt."
+                    "caption": "Optional: Wetter-Instanz auswählen und Variablen automatisch erkennen. Funktioniert mit OpenWeatherOneCall. Für andere Wetter-Module die Variablen unten manuell zuweisen."
                 },
                 {
                     "type": "RowLayout",
@@ -15,7 +15,7 @@
                         {
                             "type": "SelectInstance",
                             "name": "SourceInstance",
-                            "caption": "OpenWeather-Instanz",
+                            "caption": "Wetter-Instanz",
                             "width": "400px"
                         },
                         {
@@ -35,12 +35,12 @@
                     "items": [
                         {
                             "type": "Button",
-                            "caption": "🚀 Variablen automatisch erkennen & zuweisen",
+                            "caption": "Variablen automatisch erkennen & zuweisen",
                             "onClick": "echo WTR_AutoConfigure($id);"
                         },
                         {
                             "type": "Button",
-                            "caption": "🔍 Idents der Instanz anzeigen (Diagnose)",
+                            "caption": "Idents der Instanz anzeigen (Diagnose)",
                             "onClick": "echo WTR_ScanIdents($id);"
                         }
                     ]
@@ -82,16 +82,20 @@
         },
         {
             "type": "ExpansionPanel",
-            "caption": "Balken-Darstellung",
+            "caption": "Darstellung",
             "expanded": false,
             "items": [
+                {
+                    "type": "Label",
+                    "caption": "Balken-Dimensionen"
+                },
                 {
                     "type": "RowLayout",
                     "items": [
                         {
                             "type": "NumberSpinner",
                             "name": "RainBarHeight",
-                            "caption": "Regenbalken Höhe (px)",
+                            "caption": "Regenbalken Hoehe",
                             "minimum": 10,
                             "maximum": 100,
                             "suffix": "px"
@@ -99,20 +103,15 @@
                         {
                             "type": "NumberSpinner",
                             "name": "RainBarWidth",
-                            "caption": "Regenbalken Breite (%)",
+                            "caption": "Regenbalken Breite",
                             "minimum": 20,
                             "maximum": 100,
                             "suffix": "%"
-                        }
-                    ]
-                },
-                {
-                    "type": "RowLayout",
-                    "items": [
+                        },
                         {
                             "type": "NumberSpinner",
                             "name": "WindBarHeight",
-                            "caption": "Windbalken Höhe (px)",
+                            "caption": "Windbalken Hoehe",
                             "minimum": 10,
                             "maximum": 100,
                             "suffix": "px"
@@ -120,10 +119,91 @@
                         {
                             "type": "NumberSpinner",
                             "name": "WindBarWidth",
-                            "caption": "Windbalken Breite (%)",
+                            "caption": "Windbalken Breite",
                             "minimum": 20,
                             "maximum": 100,
                             "suffix": "%"
+                        }
+                    ]
+                },
+                {
+                    "type": "NumberSpinner",
+                    "name": "IconSize",
+                    "caption": "Icon-Groesse",
+                    "minimum": 20,
+                    "maximum": 120,
+                    "suffix": "px"
+                },
+                {
+                    "type": "Label",
+                    "caption": " "
+                },
+                {
+                    "type": "Label",
+                    "caption": "Farben"
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorTempMax",
+                            "caption": "Temp Max"
+                        },
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorTempMin",
+                            "caption": "Temp Min"
+                        },
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorTempBar",
+                            "caption": "Temp-Balken"
+                        },
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorToday",
+                            "caption": "Heute (Akzent)"
+                        }
+                    ]
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorRainLabel",
+                            "caption": "Regen-Text"
+                        },
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorRainChance",
+                            "caption": "Regen-%"
+                        },
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorRainBar",
+                            "caption": "Regen-Balken"
+                        }
+                    ]
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorWindLabel",
+                            "caption": "Wind-Text"
+                        },
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorWindBar",
+                            "caption": "Wind-Balken"
+                        },
+                        {
+                            "type": "SelectColor",
+                            "name": "ColorDayLabel",
+                            "caption": "Wochentag"
                         }
                     ]
                 }
@@ -131,12 +211,12 @@
         },
         {
             "type": "ExpansionPanel",
-            "caption": "Variablen-Zuordnung (manuell)",
+            "caption": "Variablen-Zuordnung (manuell / alle Wetter-Module)",
             "expanded": false,
             "items": [
                 {
                     "type": "Label",
-                    "caption": "Diese Felder werden von der Auto-Erkennung automatisch befüllt. Manuelle Änderung nur bei Bedarf."
+                    "caption": "Hier die Variablen manuell zuweisen. Funktioniert mit jedem Wetter-Modul (OpenWeather, WeatherUnderground, Weatherbit, etc.). Bei OpenWeather werden die Felder automatisch befuellt."
                 },
                 {
                     "type": "ExpansionPanel",
@@ -154,7 +234,7 @@
                         {
                             "type": "RowLayout",
                             "items": [
-                                { "type": "SelectVariable", "name": "Day1_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day1_Icon", "caption": "Icon-Code", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day1_RainMM", "caption": "Regen mm", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day1_RainPct", "caption": "Regen %", "width": "250px" }
                             ]
@@ -183,7 +263,7 @@
                         {
                             "type": "RowLayout",
                             "items": [
-                                { "type": "SelectVariable", "name": "Day2_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day2_Icon", "caption": "Icon-Code", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day2_RainMM", "caption": "Regen mm", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day2_RainPct", "caption": "Regen %", "width": "250px" }
                             ]
@@ -212,7 +292,7 @@
                         {
                             "type": "RowLayout",
                             "items": [
-                                { "type": "SelectVariable", "name": "Day3_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day3_Icon", "caption": "Icon-Code", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day3_RainMM", "caption": "Regen mm", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day3_RainPct", "caption": "Regen %", "width": "250px" }
                             ]
@@ -241,7 +321,7 @@
                         {
                             "type": "RowLayout",
                             "items": [
-                                { "type": "SelectVariable", "name": "Day4_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day4_Icon", "caption": "Icon-Code", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day4_RainMM", "caption": "Regen mm", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day4_RainPct", "caption": "Regen %", "width": "250px" }
                             ]
@@ -270,7 +350,7 @@
                         {
                             "type": "RowLayout",
                             "items": [
-                                { "type": "SelectVariable", "name": "Day5_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day5_Icon", "caption": "Icon-Code", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day5_RainMM", "caption": "Regen mm", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day5_RainPct", "caption": "Regen %", "width": "250px" }
                             ]
@@ -299,7 +379,7 @@
                         {
                             "type": "RowLayout",
                             "items": [
-                                { "type": "SelectVariable", "name": "Day6_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day6_Icon", "caption": "Icon-Code", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day6_RainMM", "caption": "Regen mm", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day6_RainPct", "caption": "Regen %", "width": "250px" }
                             ]
@@ -328,7 +408,7 @@
                         {
                             "type": "RowLayout",
                             "items": [
-                                { "type": "SelectVariable", "name": "Day7_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day7_Icon", "caption": "Icon-Code", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day7_RainMM", "caption": "Regen mm", "width": "250px" },
                                 { "type": "SelectVariable", "name": "Day7_RainPct", "caption": "Regen %", "width": "250px" }
                             ]
@@ -353,7 +433,7 @@
     ],
     "status": [
         { "code": 102, "icon": "active", "caption": "Aktiv" },
-        { "code": 104, "icon": "inactive", "caption": "Inaktiv – Keine Variablen konfiguriert" },
+        { "code": 104, "icon": "inactive", "caption": "Inaktiv - Keine Variablen konfiguriert" },
         { "code": 200, "icon": "error", "caption": "Fehler beim Lesen der Variablen" }
     ]
 }

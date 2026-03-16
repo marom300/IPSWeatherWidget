@@ -8,6 +8,9 @@ declare(strict_types=1);
  * Zeigt eine mehrtägige Wettervorhersage im WaWö-Stil an:
  * Temperaturbalken, Niederschlag, Wind, animierte Icons.
  *
+ * Universell einsetzbar mit jedem Wetter-Modul (OpenWeather, WeatherUnderground, etc.)
+ * Variablen können manuell oder per Auto-Erkennung (OpenWeather) zugewiesen werden.
+ *
  * Konfigurierbar über die IPS-Modulkonfiguration.
  * Ausgabe als HTMLBox-Variable für WebFront / IPSView.
  */
@@ -68,6 +71,19 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyInteger('RainBarWidth', 70);
         $this->RegisterPropertyInteger('WindBarHeight', 30);
         $this->RegisterPropertyInteger('WindBarWidth', 70);
+        $this->RegisterPropertyInteger('IconSize', 50);
+
+        // Farben (Hex ohne #)
+        $this->RegisterPropertyInteger('ColorTempMax', 0xFFFFFF);
+        $this->RegisterPropertyInteger('ColorTempMin', 0xFFFFFF);
+        $this->RegisterPropertyInteger('ColorToday', 0xF5C842);
+        $this->RegisterPropertyInteger('ColorRainLabel', 0xFFFFFF);
+        $this->RegisterPropertyInteger('ColorRainChance', 0x9EA7B1);
+        $this->RegisterPropertyInteger('ColorRainBar', 0x2F81F7);
+        $this->RegisterPropertyInteger('ColorWindLabel', 0xFFFFFF);
+        $this->RegisterPropertyInteger('ColorWindBar', 0x8B949E);
+        $this->RegisterPropertyInteger('ColorDayLabel', 0xFFFFFF);
+        $this->RegisterPropertyInteger('ColorTempBar', 0xD4A017);
 
         // Tag 1-7 Variablen-IDs
         for ($i = 1; $i <= 7; $i++) {
@@ -149,14 +165,14 @@ class WeatherWidget extends IPSModuleStrict
     {
         $sourceID = $this->ReadPropertyInteger('SourceInstance');
         if ($sourceID === 0 || !IPS_ObjectExists($sourceID)) {
-            return 'Bitte zuerst eine OpenWeather-Instanz auswählen und Konfiguration speichern.';
+            return 'Bitte zuerst eine Wetter-Instanz auswählen und Konfiguration speichern.';
         }
 
         $childIDs = IPS_GetChildrenIDs($sourceID);
         $idents = [];
         foreach ($childIDs as $childID) {
             $obj = IPS_GetObject($childID);
-            $idents[] = $obj['ObjectIdent'] . ' → ' . $obj['ObjectName'] . ' (ID: ' . $childID . ')';
+            $idents[] = $obj['ObjectIdent'] . ' -> ' . $obj['ObjectName'] . ' (ID: ' . $childID . ')';
         }
         sort($idents);
 
@@ -176,7 +192,7 @@ class WeatherWidget extends IPSModuleStrict
     {
         $sourceID = $this->ReadPropertyInteger('SourceInstance');
         if ($sourceID === 0 || !IPS_ObjectExists($sourceID)) {
-            return 'Bitte zuerst eine OpenWeather-Instanz auswählen und Konfiguration speichern.';
+            return 'Bitte zuerst eine Wetter-Instanz auswählen und Konfiguration speichern.';
         }
 
         $dayCount = $this->ReadPropertyInteger('DayCount');
@@ -232,9 +248,9 @@ class WeatherWidget extends IPSModuleStrict
         IPS_ApplyChanges($this->InstanceID);
 
         $total = $dayCount * count(self::OWM_IDENT_MAP);
-        $msg = "✅ {$foundCount} von {$total} Variablen automatisch zugewiesen.";
+        $msg = "{$foundCount} von {$total} Variablen automatisch zugewiesen.";
         if (!empty($missingList)) {
-            $msg .= "\n⚠️ Nicht gefunden:\n• " . implode("\n• ", $missingList);
+            $msg .= "\nNicht gefunden:\n- " . implode("\n- ", $missingList);
         }
 
         $this->SendDebug('AutoConfigure', $msg, 0);
@@ -312,6 +328,14 @@ class WeatherWidget extends IPSModuleStrict
     }
 
     /**
+     * Hex-Integer zu CSS-Farbcode
+     */
+    private function IntToHex(int $color): string
+    {
+        return '#' . str_pad(dechex($color), 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
      * Komplettes HTML generieren
      */
     private function GenerateHTML(array $days, bool $showRain, bool $showWind): string
@@ -321,6 +345,19 @@ class WeatherWidget extends IPSModuleStrict
         $rainBarW = $this->ReadPropertyInteger('RainBarWidth');
         $windBarH = $this->ReadPropertyInteger('WindBarHeight');
         $windBarW = $this->ReadPropertyInteger('WindBarWidth');
+        $iconSize = $this->ReadPropertyInteger('IconSize');
+
+        // Farben lesen
+        $cTempMax    = $this->IntToHex($this->ReadPropertyInteger('ColorTempMax'));
+        $cTempMin    = $this->IntToHex($this->ReadPropertyInteger('ColorTempMin'));
+        $cToday      = $this->IntToHex($this->ReadPropertyInteger('ColorToday'));
+        $cRainLabel  = $this->IntToHex($this->ReadPropertyInteger('ColorRainLabel'));
+        $cRainChance = $this->IntToHex($this->ReadPropertyInteger('ColorRainChance'));
+        $cRainBar    = $this->IntToHex($this->ReadPropertyInteger('ColorRainBar'));
+        $cWindLabel  = $this->IntToHex($this->ReadPropertyInteger('ColorWindLabel'));
+        $cWindBar    = $this->IntToHex($this->ReadPropertyInteger('ColorWindBar'));
+        $cDayLabel   = $this->IntToHex($this->ReadPropertyInteger('ColorDayLabel'));
+        $cTempBar    = $this->IntToHex($this->ReadPropertyInteger('ColorTempBar'));
 
         // Globale Min/Max berechnen
         $globalMin = PHP_FLOAT_MAX;
@@ -338,11 +375,14 @@ class WeatherWidget extends IPSModuleStrict
 
         $updateTime = date('d.m. H:i');
 
+        // CSS bauen
+        $css = $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW, $iconSize, $cTempMax, $cTempMin, $cToday, $cRainLabel, $cRainChance, $cRainBar, $cWindLabel, $cWindBar, $cDayLabel, $cTempBar);
+
         // HTML zusammenbauen
         $html = '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">';
         $html .= '<meta name="viewport" content="width=device-width,initial-scale=1.0">';
         $html .= '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">';
-        $html .= '<style>' . $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW) . '</style>';
+        $html .= '<style>' . $css . '</style>';
         $html .= '</head><body>';
 
         $html .= "<div class=\"header\"><span class=\"last-update\">{$updateTime}</span></div>";
@@ -355,11 +395,10 @@ class WeatherWidget extends IPSModuleStrict
             $topPct = round(($globalMax - $day['tMax']) / $globalRange * 100, 2);
             $heightPct = round(($day['tMax'] - $day['tMin']) / $globalRange * 100, 2);
             $cls = $today ? ' today' : '';
-            $maxC = $today ? ' style="color:#f5c842"' : '';
 
             $html .= "<div class=\"bar-col{$cls}\">";
             $html .= "<div class=\"bar-unit\" style=\"top:{$topPct}%;height:{$heightPct}%\">";
-            $html .= "<div class=\"temp-label-max\"{$maxC}>" . round($day['tMax']) . '°</div>';
+            $html .= '<div class="temp-label-max">' . round($day['tMax']) . '°</div>';
             $html .= '<div class="bar-track"><div class="bar-fill"></div></div>';
             $html .= '<div class="temp-label-min">' . round($day['tMin']) . '°</div>';
             $html .= '</div></div>';
@@ -387,8 +426,8 @@ class WeatherWidget extends IPSModuleStrict
             foreach ($days as $day) {
                 $pct = min(100, round($day['windSpeed'] / $maxWind * 100, 1));
                 $html .= '<div class="wind-cell">';
+                $html .= '<div class="wind-label">' . round($day['windSpeed']) . ' km/h</div>';
                 $html .= "<div class=\"wind-bar-track\"><div class=\"wind-bar-fill\" style=\"height:{$pct}%\"></div></div>";
-                $html .= '<div class="wind-label">' . round($day['windSpeed']) . 'kmh</div>';
                 $html .= '</div>';
             }
             $html .= '</div>';
@@ -417,9 +456,9 @@ class WeatherWidget extends IPSModuleStrict
     }
 
     /**
-     * CSS mit konfigurierbaren Balken-Dimensionen
+     * CSS mit konfigurierbaren Dimensionen und Farben
      */
-    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW): string
+    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW, int $iconPx, string $cTMax, string $cTMin, string $cToday, string $cRainL, string $cRainC, string $cRainB, string $cWindL, string $cWindB, string $cDayL, string $cTempB): string
     {
         return <<<CSS
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -431,29 +470,30 @@ body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:1
 .bars-area{flex:1;display:grid;grid-template-columns:repeat({$cols},1fr);position:relative;min-height:0}
 .bar-col{display:flex;flex-direction:column;align-items:center;position:relative}
 .bar-unit{position:absolute;display:flex;flex-direction:column;align-items:center;gap:clamp(2px,0.4vh,4px);width:100%}
-.temp-label-max{font-size:clamp(10px,min(2.2vw,2.8vh),18px);font-weight:600;color:#fff;line-height:1;text-align:center}
+.temp-label-max{font-size:clamp(10px,min(2.2vw,2.8vh),18px);font-weight:600;color:{$cTMax};line-height:1;text-align:center}
+.bar-col.today .temp-label-max{color:{$cToday}}
 .bar-track{width:clamp(5px,min(1.2vw,1.5vh),10px);flex:1;min-height:4px;background:rgba(255,255,255,0.08);border-radius:100px;position:relative;overflow:hidden}
-.bar-fill{position:absolute;inset:0;border-radius:100px;background:#d4a017}
-.bar-col.today .bar-fill{background:#f5c842;box-shadow:0 0 10px rgba(245,200,66,0.4)}
-.temp-label-min{font-size:clamp(10px,min(2.2vw,2.8vh),18px);font-weight:600;color:#fff;line-height:1;text-align:center}
+.bar-fill{position:absolute;inset:0;border-radius:100px;background:{$cTempB}}
+.bar-col.today .bar-fill{background:{$cToday};box-shadow:0 0 10px {$cToday}66}
+.temp-label-min{font-size:clamp(10px,min(2.2vw,2.8vh),18px);font-weight:600;color:{$cTMin};line-height:1;text-align:center}
 .rain-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(4px,0.8vh,8px) 0 clamp(2px,0.3vh,4px);gap:clamp(2px,0.5vw,6px)}
 .rain-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(2px,0.3vh,4px)}
-.rain-label{font-size:clamp(9px,min(1.8vw,2.2vh),15px);font-weight:600;color:#fff;line-height:1}
+.rain-label{font-size:clamp(9px,min(1.8vw,2.2vh),15px);font-weight:600;color:{$cRainL};line-height:1}
 .rain-label.zero{color:#6e7681}
-.rain-chance{font-size:clamp(7px,min(1.4vw,1.8vh),12px);font-weight:400;color:#9ea7b1;line-height:1}
+.rain-chance{font-size:clamp(7px,min(1.4vw,1.8vh),12px);font-weight:400;color:{$cRainC};line-height:1}
 .rain-bar-track{width:{$rW}%;height:{$rH}px;background:rgba(255,255,255,0.06);position:relative;overflow:hidden}
-.rain-bar-fill{position:absolute;bottom:0;left:0;width:100%;background:#2f81f7}
+.rain-bar-fill{position:absolute;bottom:0;left:0;width:100%;background:{$cRainB}}
 .wind-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(2px,0.3vh,4px) 0;gap:clamp(2px,0.5vw,6px)}
 .wind-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(2px,0.3vh,4px)}
+.wind-label{font-size:clamp(9px,min(1.8vw,2.2vh),15px);font-weight:600;color:{$cWindL};line-height:1;white-space:nowrap}
 .wind-bar-track{width:{$wW}%;height:{$wH}px;background:rgba(255,255,255,0.06);position:relative;overflow:hidden}
-.wind-bar-fill{position:absolute;bottom:0;left:0;width:100%;background:#8b949e}
-.wind-label{font-size:clamp(9px,min(1.8vw,2.2vh),15px);font-weight:600;color:#fff;line-height:1;white-space:nowrap}
+.wind-bar-fill{position:absolute;bottom:0;left:0;width:100%;background:{$cWindB}}
 .icon-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(2px,0.4vh,4px) 0}
 .icon-cell{display:flex;justify-content:center}
-.weather-icon{width:clamp(28px,min(7vw,7vh),60px);height:clamp(28px,min(7vw,7vh),60px);object-fit:contain}
+.weather-icon{width:{$iconPx}px;height:{$iconPx}px;object-fit:contain}
 .day-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(2px,0.3vh,4px) 0 0}
-.day-cell{text-align:center;font-size:clamp(10px,min(2.2vw,2.8vh),18px);font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:.5px}
-.day-cell.today{color:#f5c842}
+.day-cell{text-align:center;font-size:clamp(10px,min(2.2vw,2.8vh),18px);font-weight:600;color:{$cDayL};text-transform:uppercase;letter-spacing:.5px}
+.day-cell.today{color:{$cToday}}
 CSS;
     }
 }
