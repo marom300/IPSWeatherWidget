@@ -1061,7 +1061,7 @@ CSS;
         }
 
         $html .= '</div>';
-        $html .= '<script>(function(){function s(){var w=document.documentElement.clientWidth,h=document.documentElement.clientHeight;document.documentElement.style.setProperty("--s",Math.min(w/800,h/480))}s();window.addEventListener("resize",s)})()</script>';
+        $html .= '<script>(function(){function s(){var w=document.documentElement.clientWidth;document.documentElement.style.setProperty("--s",w/800)}s();window.addEventListener("resize",s)})()</script>';
         $html .= '</body></html>';
         return $html;
     }
