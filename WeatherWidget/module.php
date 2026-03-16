@@ -1233,6 +1233,7 @@ CSS;
 
         return <<<CSS
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{background:{$bgCss}}
 body{font-family:'Inter',sans-serif;background:{$bgCss};color:#e6edf3;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
 .header{display:flex;justify-content:flex-end;align-items:center;padding:clamp(4px,1vh,10px) clamp(8px,2vw,16px);flex-shrink:0}
 .last-update{font-size:clamp(8px,min(1.6vw,2vh),12px);color:#8b949e;font-weight:400}
