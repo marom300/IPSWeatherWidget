@@ -127,16 +127,53 @@
                     "type": "CheckBox",
                     "name": "ShowIconHeader",
                     "caption": "Kompakter Icon-Header (zusätzliche HTMLBox)"
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "Icon-Header Einstellungen",
+            "expanded": false,
+            "items": [
+                {
+                    "type": "Label",
+                    "caption": "Konfiguration der kompakten Icon-Header HTMLBox. Diese wird als separate Variable 'Weather Icon Header' erzeugt und kann z.B. als Übersichtsleiste im Dashboard eingebunden werden."
                 },
                 {
-                    "type": "CheckBox",
-                    "name": "IconHeaderShowDay",
-                    "caption": "↳ Wochentag im Icon-Header anzeigen"
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "CheckBox",
+                            "name": "IconHeaderShowDay",
+                            "caption": "Wochentag anzeigen",
+                            "width": "200px"
+                        },
+                        {
+                            "type": "CheckBox",
+                            "name": "IconHeaderShowTemp",
+                            "caption": "Temperatur anzeigen",
+                            "width": "200px"
+                        }
+                    ]
                 },
                 {
-                    "type": "CheckBox",
-                    "name": "IconHeaderShowTemp",
-                    "caption": "↳ Temperatur im Icon-Header anzeigen"
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "NumberSpinner",
+                            "name": "IconHeaderIconSize",
+                            "caption": "Icon-Groesse",
+                            "minimum": 16,
+                            "maximum": 120,
+                            "suffix": "px",
+                            "width": "200px"
+                        },
+                        {
+                            "type": "SelectColor",
+                            "name": "IconHeaderBgColor",
+                            "caption": "Hintergrundfarbe"
+                        }
+                    ]
                 }
             ]
         },
@@ -265,12 +302,22 @@
                     ]
                 },
                 {
-                    "type": "NumberSpinner",
-                    "name": "IconSize",
-                    "caption": "Icon-Groesse",
-                    "minimum": 20,
-                    "maximum": 120,
-                    "suffix": "px"
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "NumberSpinner",
+                            "name": "IconSize",
+                            "caption": "Icon-Groesse",
+                            "minimum": 20,
+                            "maximum": 120,
+                            "suffix": "px"
+                        },
+                        {
+                            "type": "SelectColor",
+                            "name": "WidgetBgColor",
+                            "caption": "Hintergrundfarbe"
+                        }
+                    ]
                 },
                 {
                     "type": "Label",
