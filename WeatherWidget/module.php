@@ -146,6 +146,7 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyInteger('UpdateInterval', 5);
         $this->RegisterPropertyBoolean('ShowRain', true);
         $this->RegisterPropertyBoolean('ShowWind', true);
+        $this->RegisterPropertyBoolean('ShowIconHeader', false);
 
         // Zeilen-Reihenfolge (von oben nach unten)
         $this->RegisterPropertyString('RowPos1', 'temp');
@@ -239,8 +240,19 @@ class WeatherWidget extends IPSModuleStrict
     {
         parent::ApplyChanges();
 
-        // HTMLBox-Variable registrieren
+        // HTMLBox-Variablen registrieren
         $this->RegisterVariableString('WeatherHTML', 'Weather Widget', '~HTMLBox', 0);
+
+        // Icon-Header (kompakte Ansicht nur mit Icons + Wochentagen)
+        if ($this->ReadPropertyBoolean('ShowIconHeader')) {
+            $this->RegisterVariableString('WeatherIconHeader', 'Weather Icon Header', '~HTMLBox', 1);
+        } else {
+            // Variable entfernen wenn deaktiviert
+            $vid = @$this->GetIDForIdent('WeatherIconHeader');
+            if ($vid !== false) {
+                $this->UnregisterVariable('WeatherIconHeader');
+            }
+        }
 
         // Timer setzen
         $interval = $this->ReadPropertyInteger('UpdateInterval');
@@ -294,6 +306,12 @@ class WeatherWidget extends IPSModuleStrict
         // HTML generieren
         $html = $this->GenerateHTML($days, $showRain, $showWind);
         $this->SetValue('WeatherHTML', $html);
+
+        // Icon-Header generieren (falls aktiviert)
+        if ($this->ReadPropertyBoolean('ShowIconHeader')) {
+            $iconHeaderHtml = $this->GenerateIconHeaderHTML($days);
+            $this->SetValue('WeatherIconHeader', $iconHeaderHtml);
+        }
 
         $this->SendDebug('Update', 'Widget aktualisiert mit ' . count($days) . ' Tagen', 0);
     }
@@ -953,6 +971,64 @@ class WeatherWidget extends IPSModuleStrict
     /**
      * Komplettes HTML generieren
      */
+    /**
+     * Kompakter Icon-Header: Nur Wochentag + Icon + Temperatur
+     * Ideal für schmale Dashboard-Leisten oder als Übersichtszeile
+     */
+    private function GenerateIconHeaderHTML(array $days): string
+    {
+        $iconSize = $this->ReadPropertyInteger('IconSize');
+        $cToday = $this->IntToHex($this->ReadPropertyInteger('ColorToday'));
+        $cDayLabel = $this->IntToHex($this->ReadPropertyInteger('ColorDayLabel'));
+        $cTempMax = $this->IntToHex($this->ReadPropertyInteger('ColorTempMax'));
+        $cTempMin = $this->IntToHex($this->ReadPropertyInteger('ColorTempMin'));
+        $cols = count($days);
+
+        $css = <<<CSS
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:100%;height:100%;display:flex;overflow:hidden}
+.icon-header{display:grid;grid-template-columns:repeat({$cols},1fr);width:100%;padding:clamp(4px,1vh,10px) clamp(4px,1vw,12px);gap:clamp(2px,0.5vw,6px)}
+.ih-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(1px,0.3vh,4px)}
+.ih-day{font-size:clamp(9px,min(1.6vw,2vh),13px);font-weight:500;color:{$cDayLabel};line-height:1}
+.ih-day.today{color:{$cToday};font-weight:700}
+.ih-icon{width:clamp(24px,min({$iconSize}px,8vw),{$iconSize}px);height:clamp(24px,min({$iconSize}px,8vw),{$iconSize}px)}
+.ih-temp{display:flex;gap:clamp(2px,0.4vw,6px);align-items:baseline;line-height:1}
+.ih-tmax{font-size:clamp(10px,min(2vw,2.4vh),16px);font-weight:600;color:{$cTempMax}}
+.ih-tmin{font-size:clamp(8px,min(1.6vw,2vh),13px);font-weight:400;color:{$cTempMin}}
+.ih-cell.today .ih-tmax{color:{$cToday}}
+CSS;
+
+        $html = '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">';
+        $html .= '<meta name="viewport" content="width=device-width,initial-scale=1.0">';
+        $html .= '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">';
+        $html .= '<style>' . $css . '</style>';
+        $html .= '</head><body>';
+        $html .= '<div class="icon-header">';
+
+        foreach ($days as $day) {
+            $today = $this->IsToday($day['begin']);
+            $wd = self::WEEKDAYS[(int) date('w', $day['begin'])];
+            $cls = $today ? ' today' : '';
+
+            $html .= "<div class=\"ih-cell{$cls}\">";
+            $html .= "<div class=\"ih-day{$cls}\">{$wd}</div>";
+
+            if ($day['icon'] !== '') {
+                $url = $this->GetIconUrl($day['icon']);
+                $html .= "<img class=\"ih-icon\" src=\"{$url}\" alt=\"{$wd}\" loading=\"lazy\">";
+            }
+
+            $html .= '<div class="ih-temp">';
+            $html .= '<span class="ih-tmax">' . round($day['tMax']) . '°</span>';
+            $html .= '<span class="ih-tmin">' . round($day['tMin']) . '°</span>';
+            $html .= '</div>';
+            $html .= '</div>';
+        }
+
+        $html .= '</div></body></html>';
+        return $html;
+    }
+
     private function GenerateHTML(array $days, bool $showRain, bool $showWind): string
     {
         $dayCount = count($days);

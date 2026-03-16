@@ -122,6 +122,11 @@
                     "type": "CheckBox",
                     "name": "ShowWind",
                     "caption": "Wind anzeigen"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "ShowIconHeader",
+                    "caption": "Kompakter Icon-Header (zusätzliche HTMLBox mit nur Icons + Wochentag + Temperatur)"
                 }
             ]
         },
