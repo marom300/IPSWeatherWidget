@@ -40,13 +40,13 @@ class WeatherWidget extends IPSModuleStrict
 
     // OpenWeatherOneCall Ident-Mapping: Widget-Feld → mögliche Ident-Prefixes (verschiedene Modul-Versionen)
     private const OWM_IDENT_MAP = [
-        'Begin'     => ['Daily_Timestamp', 'DailyForecastBegin', 'daily_timestamp', 'ForecastBegin'],
-        'TempMin'   => ['Daily_TempMin', 'DailyTempMin', 'daily_tempmin', 'DailyForecastTempMin', 'ForecastTempMin'],
-        'TempMax'   => ['Daily_TempMax', 'DailyTempMax', 'daily_tempmax', 'DailyForecastTempMax', 'ForecastTempMax'],
-        'Icon'      => ['Daily_ConditionIcon', 'DailyConditionIcon', 'daily_conditionicon', 'DailyForecastIcon', 'ForecastIcon', 'DailyWeatherIcon'],
-        'RainMM'    => ['Daily_Rain', 'DailyRain', 'daily_rain', 'DailyForecastRain', 'ForecastRain'],
-        'RainPct'   => ['Daily_RainProbability', 'DailyRainProbability', 'daily_rainprobability', 'DailyForecastRainProbability', 'ForecastRainProbability'],
-        'WindSpeed'  => ['Daily_WindSpeed', 'DailyWindSpeed', 'daily_windspeed', 'DailyForecastWindSpeed', 'ForecastWindSpeed'],
+        'Begin'     => ['DailyForecastBegin', 'Daily_Timestamp'],
+        'TempMin'   => ['DailyForecastTemperatureMin', 'Daily_TempMin'],
+        'TempMax'   => ['DailyForecastTemperatureMax', 'Daily_TempMax'],
+        'Icon'      => ['DailyForecastConditionIcon', 'Daily_ConditionIcon'],
+        'RainMM'    => ['DailyForecastRain', 'Daily_Rain'],
+        'RainPct'   => ['DailyForecastRainProbability', 'Daily_RainProbability'],
+        'WindSpeed'  => ['DailyForecastWindSpeed', 'Daily_WindSpeed'],
     ];
 
     public function Create(): void
@@ -197,20 +197,25 @@ class WeatherWidget extends IPSModuleStrict
 
         for ($i = 1; $i <= $dayCount; $i++) {
             $owmDay = $startDay + ($i - 1);
-            $daySuffix = "_D{$owmDay}";
-            $daySuffixLower = strtolower($daySuffix);
+            // Verschiedene Suffix-Formate: _00, _01 (zweistellig) und _D0, _D1
+            $suffixes = [
+                '_' . str_pad((string) $owmDay, 2, '0', STR_PAD_LEFT),  // _00, _01, _02
+                '_D' . $owmDay,                                            // _D0, _D1, _D2
+            ];
 
             // Für jedes Widget-Feld die passende Variable suchen
             foreach (self::OWM_IDENT_MAP as $field => $identPatterns) {
                 $propName = "Day{$i}_{$field}";
                 $varID = false;
 
-                // Alle Muster durchprobieren
+                // Alle Prefix × Suffix Kombinationen durchprobieren
                 foreach ($identPatterns as $pattern) {
-                    $search = strtolower($pattern) . $daySuffixLower;
-                    if (isset($identMap[$search])) {
-                        $varID = $identMap[$search];
-                        break;
+                    foreach ($suffixes as $suffix) {
+                        $search = strtolower($pattern . $suffix);
+                        if (isset($identMap[$search])) {
+                            $varID = $identMap[$search];
+                            break 2;
+                        }
                     }
                 }
 
