@@ -2,16 +2,29 @@
     "elements": [
         {
             "type": "ExpansionPanel",
-            "caption": "Auto-Erkennung (OpenWeather / WeatherUnderground)",
+            "caption": "Auto-Erkennung",
             "expanded": true,
             "items": [
                 {
                     "type": "Label",
-                    "caption": "Optional: Wetter-Instanz auswählen und Variablen automatisch erkennen. Funktioniert mit OpenWeatherOneCall und WeatherUnderground. Für andere Wetter-Module die Variablen unten manuell zuweisen."
+                    "caption": "Wetter-Modul Typ auswählen, Instanz zuweisen und Variablen automatisch erkennen. Für nicht unterstützte Module die Variablen unten manuell zuweisen."
                 },
                 {
                     "type": "RowLayout",
                     "items": [
+                        {
+                            "type": "Select",
+                            "name": "SourceType",
+                            "caption": "Wetter-Modul Typ",
+                            "width": "300px",
+                            "options": [
+                                { "caption": "Bitte wählen...", "value": 0 },
+                                { "caption": "OpenWeather OneCall", "value": 1 },
+                                { "caption": "Weather Underground", "value": 2 },
+                                { "caption": "Froggit / Ecowitt (geplant)", "value": 3 },
+                                { "caption": "Netatmo Weather (geplant)", "value": 4 }
+                            ]
+                        },
                         {
                             "type": "SelectInstance",
                             "name": "SourceInstance",

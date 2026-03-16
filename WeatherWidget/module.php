@@ -41,63 +41,97 @@ class WeatherWidget extends IPSModuleStrict
     private const ICON_BASE = 'https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/fill/svg';
     private const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
-    // Ident-Mapping: Widget-Feld → mögliche Ident-Prefixes (OpenWeather + WeatherUnderground + generisch)
-    private const IDENT_MAP = [
-        'Begin'     => [
-            // OpenWeather
-            'DailyForecastBegin', 'Daily_Timestamp',
-            // WeatherUnderground / generisch
-            'ForecastBegin', 'Forecast_Begin', 'ForecastTimestamp', 'Forecast_Timestamp',
-        ],
-        'TempMin'   => [
-            'DailyForecastTemperatureMin', 'Daily_TempMin',
-            'ForecastTemperatureMin', 'ForecastTemperatureLow', 'ForecastTempMin', 'ForecastTempLow',
-            'Forecast_TempMin', 'Forecast_TempLow', 'Forecast_TemperatureMin', 'Forecast_TemperatureLow',
-            'ForecastMinTemperature', 'Forecast_MinTemperature', 'ForecastLowTemperature',
-        ],
-        'TempMax'   => [
-            'DailyForecastTemperatureMax', 'Daily_TempMax',
-            'ForecastTemperatureMax', 'ForecastTemperatureHigh', 'ForecastTempMax', 'ForecastTempHigh',
-            'Forecast_TempMax', 'Forecast_TempHigh', 'Forecast_TemperatureMax', 'Forecast_TemperatureHigh',
-            'ForecastMaxTemperature', 'Forecast_MaxTemperature', 'ForecastHighTemperature',
-        ],
-        'Icon'      => [
-            'DailyForecastConditionIcon', 'Daily_ConditionIcon',
-            'ForecastConditionIcon', 'ForecastIcon', 'Forecast_Icon', 'Forecast_ConditionIcon',
-            'ForecastCondition', 'Forecast_Condition',
-        ],
-        'RainMM'    => [
-            'DailyForecastRain', 'Daily_Rain',
-            'ForecastRain', 'Forecast_Rain', 'ForecastPrecipitation', 'Forecast_Precipitation',
-            'ForecastRainAmount', 'Forecast_RainAmount',
-        ],
-        'RainPct'   => [
-            'DailyForecastRainProbability', 'Daily_RainProbability',
-            'ForecastRainProbability', 'Forecast_RainProbability',
-            'ForecastChanceOfRain', 'Forecast_ChanceOfRain',
-            'ForecastPOP', 'Forecast_POP',
-            'ForecastPrecipitationChance', 'Forecast_PrecipitationChance',
-        ],
-        'WindSpeed'  => [
-            'DailyForecastWindSpeed', 'Daily_WindSpeed',
-            'ForecastWindSpeed', 'Forecast_WindSpeed', 'ForecastWind', 'Forecast_Wind',
-        ],
+    // Keyword→Icon-Mapping für Text-Vorhersagen (Wunderground etc.)
+    // Reihenfolge wichtig: spezifischere Keywords zuerst!
+    private const FORECAST_TEXT_MAP = [
+        // Gewitter
+        'gewitter'          => 'thunderstorms-day-rain',
+        'thunder'           => 'thunderstorms-day-rain',
+        'storm'             => 'thunderstorms-day-rain',
+        // Schnee
+        'schneeregen'       => 'overcast-day-sleet',
+        'sleet'             => 'overcast-day-sleet',
+        'schneeschauer'     => 'overcast-day-snow',
+        'snow shower'       => 'overcast-day-snow',
+        'schnee'            => 'overcast-day-snow',
+        'snow'              => 'overcast-day-snow',
+        // Regen
+        'regenschauer'      => 'overcast-day-rain',
+        'rain shower'       => 'overcast-day-rain',
+        'schauer'           => 'overcast-day-rain',
+        'shower'            => 'overcast-day-rain',
+        'starker regen'     => 'overcast-day-rain',
+        'heavy rain'        => 'overcast-day-rain',
+        'leichter regen'    => 'overcast-day-drizzle',
+        'light rain'        => 'overcast-day-drizzle',
+        'nieselregen'       => 'overcast-day-drizzle',
+        'drizzle'           => 'overcast-day-drizzle',
+        'regen'             => 'overcast-day-rain',
+        'rain'              => 'overcast-day-rain',
+        // Nebel
+        'nebel'             => 'mist',
+        'neblig'            => 'mist',
+        'fog'               => 'mist',
+        'mist'              => 'mist',
+        'dunst'             => 'mist',
+        'haze'              => 'mist',
+        // Bewölkung (spezifischer zuerst)
+        'überwiegend sonnig'    => 'partly-cloudy-day',
+        'mostly sunny'          => 'partly-cloudy-day',
+        'teils bewölkt'         => 'partly-cloudy-day',
+        'teilweise bewölkt'     => 'partly-cloudy-day',
+        'partly cloudy'         => 'partly-cloudy-day',
+        'teils sonnig'          => 'partly-cloudy-day',
+        'wechselnd bewölkt'     => 'partly-cloudy-day',
+        'überwiegend bewölkt'   => 'overcast-day',
+        'mostly cloudy'         => 'overcast-day',
+        'stark bewölkt'         => 'overcast-day',
+        'bedeckt'               => 'overcast-day',
+        'overcast'              => 'overcast-day',
+        'bewölkt'               => 'cloudy',
+        'cloudy'                => 'cloudy',
+        'wolkig'                => 'cloudy',
+        // Klar / Sonnig
+        'sonnig'            => 'clear-day',
+        'sunny'             => 'clear-day',
+        'klar'              => 'clear-day',
+        'clear'             => 'clear-day',
+        'heiter'            => 'clear-day',
+        'fair'              => 'partly-cloudy-day',
     ];
 
-    // Mögliche Tag-Suffixe für Auto-Erkennung (Day 0, 1, 2, ...)
-    private const DAY_SUFFIX_FORMATS = [
-        '_%02d',    // _00, _01, _02
-        '_D%d',     // _D0, _D1, _D2
-        '_%d',      // _0, _1, _2
-        '_Day%d',   // _Day0, _Day1
-        'Day%d_',   // Day0_, Day1_ (prefix-style, wird als Suffix angehängt)
+    // Provider-Typen
+    private const PROVIDER_OPENWEATHER = 1;
+    private const PROVIDER_WUNDERGROUND = 2;
+    private const PROVIDER_FROGGIT = 3;
+    private const PROVIDER_NETATMO = 4;
+
+    // OpenWeather Ident-Mapping: Widget-Feld → mögliche Ident-Prefixes (+ Tag-Suffix)
+    private const OPENWEATHER_MAP = [
+        'Begin'     => ['DailyForecastBegin', 'Daily_Timestamp', 'ForecastBegin', 'Forecast_Begin', 'ForecastTimestamp', 'Forecast_Timestamp'],
+        'TempMin'   => ['DailyForecastTemperatureMin', 'Daily_TempMin', 'ForecastTemperatureMin', 'ForecastTempMin', 'Forecast_TempMin', 'Forecast_TemperatureMin'],
+        'TempMax'   => ['DailyForecastTemperatureMax', 'Daily_TempMax', 'ForecastTemperatureMax', 'ForecastTempMax', 'Forecast_TempMax', 'Forecast_TemperatureMax'],
+        'Icon'      => ['DailyForecastConditionIcon', 'Daily_ConditionIcon', 'ForecastConditionIcon', 'ForecastIcon', 'Forecast_Icon', 'Forecast_ConditionIcon'],
+        'RainMM'    => ['DailyForecastRain', 'Daily_Rain', 'ForecastRain', 'Forecast_Rain', 'ForecastPrecipitation', 'Forecast_Precipitation'],
+        'RainPct'   => ['DailyForecastRainProbability', 'Daily_RainProbability', 'ForecastRainProbability', 'Forecast_RainProbability', 'ForecastPOP', 'Forecast_POP'],
+        'WindSpeed' => ['DailyForecastWindSpeed', 'Daily_WindSpeed', 'ForecastWindSpeed', 'Forecast_WindSpeed'],
     ];
+
+    // WeatherUnderground Ident-Mapping: Widget-Feld → Ident-Suffix (Prefix ist D{N})
+    private const WUNDERGROUND_MAP = [
+        'TempMin'   => ['TemperatureMin'],
+        'TempMax'   => ['TemperatureMax'],
+        'Icon'      => ['Forecast'],
+        'RainMM'    => ['QPF'],
+    ];
+
 
     public function Create(): void
     {
         parent::Create();
 
         // Quell-Instanz für Auto-Erkennung
+        $this->RegisterPropertyInteger('SourceType', 0); // 0=nicht gewählt, 1=OpenWeather, 2=Wunderground, 3=Froggit, 4=Netatmo
         $this->RegisterPropertyInteger('SourceInstance', 0);
         $this->RegisterPropertyInteger('StartDay', 0); // 0=D0 (heute), 1=D1 (morgen)
 
@@ -160,9 +194,9 @@ class WeatherWidget extends IPSModuleStrict
         $interval = $this->ReadPropertyInteger('UpdateInterval');
         $this->SetTimerInterval('WTR_UpdateTimer', $interval * 60 * 1000);
 
-        // Prüfen ob mindestens Tag 1 konfiguriert ist
-        $day1Begin = $this->ReadPropertyInteger('Day1_Begin');
-        if ($day1Begin === 0) {
+        // Prüfen ob mindestens Tag 1 TempMin konfiguriert ist
+        $day1TempMin = $this->ReadPropertyInteger('Day1_TempMin');
+        if ($day1TempMin === 0) {
             $this->SetStatus(104); // Inaktiv
             return;
         }
@@ -234,12 +268,15 @@ class WeatherWidget extends IPSModuleStrict
 
     /**
      * Auto-Erkennung durchführen und Variablen direkt setzen
-     * Sucht flexibel nach passenden Idents per Keyword-Matching
-     * Funktioniert mit OpenWeather, WeatherUnderground und ähnlichen Modulen
      * Aufrufbar via WTR_AutoConfigure($InstanceID)
      */
     public function AutoConfigure(): string
     {
+        $sourceType = $this->ReadPropertyInteger('SourceType');
+        if ($sourceType === 0) {
+            return 'Bitte zuerst einen Wetter-Modul Typ auswählen und Konfiguration speichern.';
+        }
+
         $sourceID = $this->ReadPropertyInteger('SourceInstance');
         if ($sourceID === 0 || !IPS_ObjectExists($sourceID)) {
             return 'Bitte zuerst eine Wetter-Instanz auswählen und Konfiguration speichern.';
@@ -258,27 +295,40 @@ class WeatherWidget extends IPSModuleStrict
             }
         }
 
+        switch ($sourceType) {
+            case self::PROVIDER_WUNDERGROUND:
+                return $this->AutoConfigureWunderground($identMap, $dayCount, $startDay);
+            case self::PROVIDER_OPENWEATHER:
+            default:
+                return $this->AutoConfigureOpenWeather($identMap, $dayCount, $startDay);
+        }
+    }
+
+    /**
+     * Auto-Erkennung für OpenWeather OneCall
+     * Ident-Format: {Prefix}{Suffix} z.B. DailyForecastTemperatureMin_D0
+     */
+    private function AutoConfigureOpenWeather(array $identMap, int $dayCount, int $startDay): string
+    {
         $foundCount = 0;
         $missingList = [];
+        $allFields = array_keys(self::OPENWEATHER_MAP);
 
         for ($i = 1; $i <= $dayCount; $i++) {
             $owmDay = $startDay + ($i - 1);
 
-            // Verschiedene Suffix-Formate für Tag-Nummern
             $suffixes = [
-                '_' . str_pad((string) $owmDay, 2, '0', STR_PAD_LEFT),  // _00, _01, _02
-                '_D' . $owmDay,                                            // _D0, _D1, _D2
-                '_' . $owmDay,                                             // _0, _1, _2
-                '_Day' . $owmDay,                                          // _Day0, _Day1
+                '_' . str_pad((string) $owmDay, 2, '0', STR_PAD_LEFT),
+                '_D' . $owmDay,
+                '_' . $owmDay,
+                '_Day' . $owmDay,
             ];
 
-            // Für jedes Widget-Feld die passende Variable suchen
-            foreach (self::IDENT_MAP as $field => $identPatterns) {
+            foreach ($allFields as $field) {
                 $propName = "Day{$i}_{$field}";
                 $varID = false;
 
-                // Alle Prefix × Suffix Kombinationen durchprobieren
-                foreach ($identPatterns as $pattern) {
+                foreach (self::OPENWEATHER_MAP[$field] as $pattern) {
                     foreach ($suffixes as $suffix) {
                         $search = strtolower($pattern . $suffix);
                         if (isset($identMap[$search])) {
@@ -297,16 +347,84 @@ class WeatherWidget extends IPSModuleStrict
             }
         }
 
-        // Änderungen anwenden
         IPS_ApplyChanges($this->InstanceID);
 
-        $total = $dayCount * count(self::IDENT_MAP);
-        $msg = "{$foundCount} von {$total} Variablen automatisch zugewiesen.";
+        $total = $dayCount * count($allFields);
+        $msg = "{$foundCount} von {$total} Variablen automatisch zugewiesen (OpenWeather).";
         if (!empty($missingList)) {
             $msg .= "\nNicht gefunden:\n- " . implode("\n- ", $missingList);
         }
         if ($foundCount < $total) {
             $msg .= "\n\nTipp: Mit 'Idents anzeigen' die verfügbaren Idents prüfen und ggf. manuell zuweisen.";
+        }
+
+        $this->SendDebug('AutoConfigure', $msg, 0);
+        return $msg;
+    }
+
+    /**
+     * Auto-Erkennung für WeatherUnderground
+     * Ident-Format: D{N}{FieldName} z.B. D1TemperatureMax, D2QPF
+     * Besonderheiten: Kein Begin-Timestamp, kein RainPct, kein WindSpeed in Vorhersage
+     */
+    private function AutoConfigureWunderground(array $identMap, int $dayCount, int $startDay): string
+    {
+        $foundCount = 0;
+        $missingList = [];
+        $notes = [];
+
+        // Wunderground hat max 5 Vorhersage-Tage (D1-D5)
+        $maxWuDays = 5;
+        if ($dayCount > $maxWuDays) {
+            $notes[] = "Wunderground bietet max. {$maxWuDays} Vorhersage-Tage. Tage {$maxWuDays}+ werden nicht zugewiesen.";
+        }
+
+        for ($i = 1; $i <= $dayCount; $i++) {
+            // Wunderground D-Nummern: D1=Tag 1, D2=Tag 2, ...
+            $wuDay = $i;
+            if ($wuDay > $maxWuDays) {
+                $missingList[] = "Tag {$i}: Keine Daten (D{$wuDay} > D{$maxWuDays})";
+                continue;
+            }
+
+            foreach (self::WUNDERGROUND_MAP as $field => $wuIdents) {
+                $propName = "Day{$i}_{$field}";
+                $varID = false;
+
+                foreach ($wuIdents as $wuIdent) {
+                    $search = strtolower('D' . $wuDay . $wuIdent);
+                    if (isset($identMap[$search])) {
+                        $varID = $identMap[$search];
+                        break;
+                    }
+                }
+
+                if ($varID !== false) {
+                    IPS_SetProperty($this->InstanceID, $propName, $varID);
+                    $foundCount++;
+                } else {
+                    $missingList[] = "Tag {$i}: {$field}";
+                }
+            }
+        }
+
+        IPS_ApplyChanges($this->InstanceID);
+
+        $totalFields = count(self::WUNDERGROUND_MAP);
+        $total = min($dayCount, $maxWuDays) * $totalFields;
+        $msg = "{$foundCount} von {$total} Variablen automatisch zugewiesen (Wunderground).";
+
+        $msg .= "\n\nHinweise:";
+        $msg .= "\n- Begin (Timestamp): Nicht nötig bei Wunderground – wird automatisch berechnet.";
+        $msg .= "\n- Regen-%: Nicht verfügbar bei Wunderground.";
+        $msg .= "\n- Wind: Nicht als Vorhersage verfügbar bei Wunderground.";
+        $msg .= "\n- Icon: Wunderground liefert Text-Vorhersagen, keine OWM-Icon-Codes.";
+
+        if (!empty($notes)) {
+            $msg .= "\n\n" . implode("\n", $notes);
+        }
+        if (!empty($missingList)) {
+            $msg .= "\n\nNicht gefunden:\n- " . implode("\n- ", $missingList);
         }
 
         $this->SendDebug('AutoConfigure', $msg, 0);
@@ -323,23 +441,36 @@ class WeatherWidget extends IPSModuleStrict
         $tempMaxID = $this->ReadPropertyInteger("Day{$dayNum}_TempMax");
         $iconID = $this->ReadPropertyInteger("Day{$dayNum}_Icon");
 
-        // Mindestens Begin + TempMin + TempMax + Icon müssen konfiguriert sein
-        if ($beginID === 0 || $tempMinID === 0 || $tempMaxID === 0 || $iconID === 0) {
+        // Mindestens TempMin + TempMax müssen konfiguriert sein
+        if ($tempMinID === 0 || $tempMaxID === 0) {
             return null;
         }
 
         // Variablen prüfen
-        if (!IPS_VariableExists($beginID) || !IPS_VariableExists($tempMinID)
-            || !IPS_VariableExists($tempMaxID) || !IPS_VariableExists($iconID)) {
-            $this->SendDebug("Tag {$dayNum}", 'Eine oder mehrere Variablen existieren nicht', 0);
+        if (!IPS_VariableExists($tempMinID) || !IPS_VariableExists($tempMaxID)) {
+            $this->SendDebug("Tag {$dayNum}", 'TempMin oder TempMax Variable existiert nicht', 0);
             return null;
         }
 
+        // Begin: aus Variable lesen oder automatisch berechnen
+        if ($beginID > 0 && IPS_VariableExists($beginID)) {
+            $begin = (int) GetValue($beginID);
+        } else {
+            $startDay = $this->ReadPropertyInteger('StartDay');
+            $begin = (int) strtotime('today') + ($startDay + $dayNum - 1) * 86400;
+        }
+
+        // Icon: aus Variable lesen oder leer lassen
+        $icon = '';
+        if ($iconID > 0 && IPS_VariableExists($iconID)) {
+            $icon = (string) GetValue($iconID);
+        }
+
         $data = [
-            'begin'     => (int) GetValue($beginID),
+            'begin'     => $begin,
             'tMin'      => (float) GetValue($tempMinID),
             'tMax'      => (float) GetValue($tempMaxID),
-            'icon'      => (string) GetValue($iconID),
+            'icon'      => $icon,
             'rainMM'    => 0.0,
             'rainPct'   => 0.0,
             'windSpeed' => 0.0,
@@ -365,14 +496,30 @@ class WeatherWidget extends IPSModuleStrict
     }
 
     /**
-     * Icon-URL aus OWM-Code generieren
+     * Icon-URL aus OWM-Code oder Vorhersage-Text generieren
      */
-    private function GetIconUrl(string $owmCode): string
+    private function GetIconUrl(string $iconValue): string
     {
-        if (isset(self::ICON_MAP[$owmCode])) {
-            return self::ICON_BASE . '/' . self::ICON_MAP[$owmCode] . '.svg';
+        // 1. Exakter OWM-Code (z.B. "01d", "10n")
+        if (isset(self::ICON_MAP[$iconValue])) {
+            return self::ICON_BASE . '/' . self::ICON_MAP[$iconValue] . '.svg';
         }
-        return "https://openweathermap.org/img/wn/{$owmCode}@2x.png";
+
+        // 2. Text-Vorhersage (z.B. "Bewölkt", "Partly Cloudy") → Keyword-Matching
+        $lower = mb_strtolower($iconValue, 'UTF-8');
+        foreach (self::FORECAST_TEXT_MAP as $keyword => $iconName) {
+            if (mb_strpos($lower, $keyword) !== false) {
+                return self::ICON_BASE . '/' . $iconName . '.svg';
+            }
+        }
+
+        // 3. Fallback: OWM-URL (falls doch ein unbekannter Code)
+        if (preg_match('/^\d{2}[dn]$/', $iconValue)) {
+            return "https://openweathermap.org/img/wn/{$iconValue}@2x.png";
+        }
+
+        // 4. Unbekannter Text → generisches Wolken-Icon
+        return self::ICON_BASE . '/not-available.svg';
     }
 
     /**
@@ -562,8 +709,12 @@ class WeatherWidget extends IPSModuleStrict
     {
         $html = '<div class="icon-row">';
         foreach ($days as $day) {
-            $url = $this->GetIconUrl($day['icon']);
-            $html .= "<div class=\"icon-cell\"><img class=\"weather-icon\" src=\"{$url}\" alt=\"Wetter\" loading=\"lazy\"></div>";
+            if ($day['icon'] === '') {
+                $html .= '<div class="icon-cell"></div>';
+            } else {
+                $url = $this->GetIconUrl($day['icon']);
+                $html .= "<div class=\"icon-cell\"><img class=\"weather-icon\" src=\"{$url}\" alt=\"Wetter\" loading=\"lazy\"></div>";
+            }
         }
         $html .= '</div>';
         return $html;
