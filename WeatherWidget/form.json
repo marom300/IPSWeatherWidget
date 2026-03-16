@@ -7,25 +7,28 @@
             "items": [
                 {
                     "type": "Label",
-                    "caption": "Wetter-Modul Typ auswählen, Instanz zuweisen und Variablen automatisch erkennen. MET Norway benötigt keine Instanz – nur Koordinaten eingeben. Für nicht unterstützte Module die Variablen unten manuell zuweisen."
+                    "caption": "Wetter-Modul Typ auswählen und Variablen automatisch erkennen. Für nicht unterstützte Module die Variablen unten manuell zuweisen."
+                },
+                {
+                    "type": "Select",
+                    "name": "SourceType",
+                    "caption": "Wetter-Modul Typ",
+                    "width": "300px",
+                    "options": [
+                        { "caption": "Bitte wählen...", "value": 0 },
+                        { "caption": "OpenWeather OneCall", "value": 1 },
+                        { "caption": "Weather Underground", "value": 2 },
+                        { "caption": "Froggit / Ecowitt (geplant)", "value": 3 },
+                        { "caption": "Netatmo Weather (geplant)", "value": 4 },
+                        { "caption": "MET Norway (direkte API)", "value": 5 }
+                    ],
+                    "onChange": "$isMET = ($SourceType == 5); $this->UpdateFormField('InstanceRow', 'visible', !$isMET); $this->UpdateFormField('METConfigRow', 'visible', $isMET);"
                 },
                 {
                     "type": "RowLayout",
+                    "name": "InstanceRow",
+                    "visible": true,
                     "items": [
-                        {
-                            "type": "Select",
-                            "name": "SourceType",
-                            "caption": "Wetter-Modul Typ",
-                            "width": "300px",
-                            "options": [
-                                { "caption": "Bitte wählen...", "value": 0 },
-                                { "caption": "OpenWeather OneCall", "value": 1 },
-                                { "caption": "Weather Underground", "value": 2 },
-                                { "caption": "Froggit / Ecowitt (geplant)", "value": 3 },
-                                { "caption": "Netatmo Weather (geplant)", "value": 4 },
-                                { "caption": "MET Norway (direkte API)", "value": 5 }
-                            ]
-                        },
                         {
                             "type": "SelectInstance",
                             "name": "SourceInstance",
@@ -46,6 +49,8 @@
                 },
                 {
                     "type": "RowLayout",
+                    "name": "METConfigRow",
+                    "visible": false,
                     "items": [
                         {
                             "type": "ValidationTextBox",
@@ -67,11 +72,6 @@
                             "maximum": 9000,
                             "suffix": "m",
                             "width": "200px"
-                        },
-                        {
-                            "type": "Label",
-                            "caption": "← Nur für MET Norway relevant. Koordinaten z.B. von Google Maps.",
-                            "italic": true
                         }
                     ]
                 },

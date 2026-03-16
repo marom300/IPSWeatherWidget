@@ -189,6 +189,35 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterTimer('WTR_UpdateTimer', 0, 'WTR_Update($_IPS[\'TARGET\']);');
     }
 
+    /**
+     * Konfigurationsformular dynamisch anpassen
+     * Setzt initiale Sichtbarkeit der MET/Instanz-Felder je nach SourceType
+     */
+    public function GetConfigurationForm(): string
+    {
+        $form = json_decode(file_get_contents(__DIR__ . '/form.json'), true);
+        $isMET = $this->ReadPropertyInteger('SourceType') === self::PROVIDER_METNORWAY;
+
+        // Elemente im Form durchgehen und visible setzen
+        foreach ($form['elements'] as &$panel) {
+            if (!isset($panel['items'])) {
+                continue;
+            }
+            foreach ($panel['items'] as &$item) {
+                if (isset($item['name'])) {
+                    if ($item['name'] === 'InstanceRow') {
+                        $item['visible'] = !$isMET;
+                    }
+                    if ($item['name'] === 'METConfigRow') {
+                        $item['visible'] = $isMET;
+                    }
+                }
+            }
+        }
+
+        return json_encode($form);
+    }
+
     public function ApplyChanges(): void
     {
         parent::ApplyChanges();
