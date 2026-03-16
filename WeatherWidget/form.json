@@ -2,6 +2,48 @@
     "elements": [
         {
             "type": "ExpansionPanel",
+            "caption": "🔍 Auto-Erkennung (OpenWeather)",
+            "expanded": true,
+            "items": [
+                {
+                    "type": "Label",
+                    "caption": "Wähle deine OpenWeatherOneCall-Instanz aus und klicke 'Variablen erkennen'. Alle Felder werden automatisch befüllt."
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "SelectInstance",
+                            "name": "SourceInstance",
+                            "caption": "OpenWeather-Instanz",
+                            "width": "400px"
+                        },
+                        {
+                            "type": "Select",
+                            "name": "StartDay",
+                            "caption": "Beginne ab",
+                            "width": "200px",
+                            "options": [
+                                { "caption": "Heute (D0)", "value": 0 },
+                                { "caption": "Morgen (D1)", "value": 1 }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "Button",
+                            "caption": "🚀 Variablen automatisch erkennen & zuweisen",
+                            "onClick": "echo WTR_AutoConfigure($id);"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "ExpansionPanel",
             "caption": "Allgemein",
             "expanded": true,
             "items": [
@@ -84,203 +126,214 @@
         },
         {
             "type": "ExpansionPanel",
-            "caption": "Tag 1",
-            "expanded": true,
-            "items": [
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day1_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day1_TempMin", "caption": "Temp Min", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day1_TempMax", "caption": "Temp Max", "width": "250px" }
-                    ]
-                },
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day1_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day1_RainMM", "caption": "Regen mm", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day1_RainPct", "caption": "Regen %", "width": "250px" }
-                    ]
-                },
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day1_WindSpeed", "caption": "Wind km/h", "width": "250px" }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "ExpansionPanel",
-            "caption": "Tag 2",
+            "caption": "Variablen-Zuordnung (manuell)",
             "expanded": false,
             "items": [
                 {
-                    "type": "RowLayout",
+                    "type": "Label",
+                    "caption": "Diese Felder werden von der Auto-Erkennung automatisch befüllt. Manuelle Änderung nur bei Bedarf."
+                },
+                {
+                    "type": "ExpansionPanel",
+                    "caption": "Tag 1",
+                    "expanded": false,
                     "items": [
-                        { "type": "SelectVariable", "name": "Day2_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day2_TempMin", "caption": "Temp Min", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day2_TempMax", "caption": "Temp Max", "width": "250px" }
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day1_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day1_TempMin", "caption": "Temp Min", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day1_TempMax", "caption": "Temp Max", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day1_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day1_RainMM", "caption": "Regen mm", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day1_RainPct", "caption": "Regen %", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day1_WindSpeed", "caption": "Wind km/h", "width": "250px" }
+                            ]
+                        }
                     ]
                 },
                 {
-                    "type": "RowLayout",
+                    "type": "ExpansionPanel",
+                    "caption": "Tag 2",
+                    "expanded": false,
                     "items": [
-                        { "type": "SelectVariable", "name": "Day2_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day2_RainMM", "caption": "Regen mm", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day2_RainPct", "caption": "Regen %", "width": "250px" }
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day2_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day2_TempMin", "caption": "Temp Min", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day2_TempMax", "caption": "Temp Max", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day2_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day2_RainMM", "caption": "Regen mm", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day2_RainPct", "caption": "Regen %", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day2_WindSpeed", "caption": "Wind km/h", "width": "250px" }
+                            ]
+                        }
                     ]
                 },
                 {
-                    "type": "RowLayout",
+                    "type": "ExpansionPanel",
+                    "caption": "Tag 3",
+                    "expanded": false,
                     "items": [
-                        { "type": "SelectVariable", "name": "Day2_WindSpeed", "caption": "Wind km/h", "width": "250px" }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "ExpansionPanel",
-            "caption": "Tag 3",
-            "expanded": false,
-            "items": [
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day3_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day3_TempMin", "caption": "Temp Min", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day3_TempMax", "caption": "Temp Max", "width": "250px" }
-                    ]
-                },
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day3_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day3_RainMM", "caption": "Regen mm", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day3_RainPct", "caption": "Regen %", "width": "250px" }
-                    ]
-                },
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day3_WindSpeed", "caption": "Wind km/h", "width": "250px" }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "ExpansionPanel",
-            "caption": "Tag 4",
-            "expanded": false,
-            "items": [
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day4_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day4_TempMin", "caption": "Temp Min", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day4_TempMax", "caption": "Temp Max", "width": "250px" }
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day3_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day3_TempMin", "caption": "Temp Min", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day3_TempMax", "caption": "Temp Max", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day3_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day3_RainMM", "caption": "Regen mm", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day3_RainPct", "caption": "Regen %", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day3_WindSpeed", "caption": "Wind km/h", "width": "250px" }
+                            ]
+                        }
                     ]
                 },
                 {
-                    "type": "RowLayout",
+                    "type": "ExpansionPanel",
+                    "caption": "Tag 4",
+                    "expanded": false,
                     "items": [
-                        { "type": "SelectVariable", "name": "Day4_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day4_RainMM", "caption": "Regen mm", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day4_RainPct", "caption": "Regen %", "width": "250px" }
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day4_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day4_TempMin", "caption": "Temp Min", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day4_TempMax", "caption": "Temp Max", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day4_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day4_RainMM", "caption": "Regen mm", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day4_RainPct", "caption": "Regen %", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day4_WindSpeed", "caption": "Wind km/h", "width": "250px" }
+                            ]
+                        }
                     ]
                 },
                 {
-                    "type": "RowLayout",
+                    "type": "ExpansionPanel",
+                    "caption": "Tag 5",
+                    "expanded": false,
                     "items": [
-                        { "type": "SelectVariable", "name": "Day4_WindSpeed", "caption": "Wind km/h", "width": "250px" }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "ExpansionPanel",
-            "caption": "Tag 5",
-            "expanded": false,
-            "items": [
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day5_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day5_TempMin", "caption": "Temp Min", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day5_TempMax", "caption": "Temp Max", "width": "250px" }
-                    ]
-                },
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day5_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day5_RainMM", "caption": "Regen mm", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day5_RainPct", "caption": "Regen %", "width": "250px" }
-                    ]
-                },
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day5_WindSpeed", "caption": "Wind km/h", "width": "250px" }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "ExpansionPanel",
-            "caption": "Tag 6",
-            "expanded": false,
-            "items": [
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day6_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day6_TempMin", "caption": "Temp Min", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day6_TempMax", "caption": "Temp Max", "width": "250px" }
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day5_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day5_TempMin", "caption": "Temp Min", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day5_TempMax", "caption": "Temp Max", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day5_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day5_RainMM", "caption": "Regen mm", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day5_RainPct", "caption": "Regen %", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day5_WindSpeed", "caption": "Wind km/h", "width": "250px" }
+                            ]
+                        }
                     ]
                 },
                 {
-                    "type": "RowLayout",
+                    "type": "ExpansionPanel",
+                    "caption": "Tag 6",
+                    "expanded": false,
                     "items": [
-                        { "type": "SelectVariable", "name": "Day6_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day6_RainMM", "caption": "Regen mm", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day6_RainPct", "caption": "Regen %", "width": "250px" }
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day6_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day6_TempMin", "caption": "Temp Min", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day6_TempMax", "caption": "Temp Max", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day6_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day6_RainMM", "caption": "Regen mm", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day6_RainPct", "caption": "Regen %", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day6_WindSpeed", "caption": "Wind km/h", "width": "250px" }
+                            ]
+                        }
                     ]
                 },
                 {
-                    "type": "RowLayout",
+                    "type": "ExpansionPanel",
+                    "caption": "Tag 7",
+                    "expanded": false,
                     "items": [
-                        { "type": "SelectVariable", "name": "Day6_WindSpeed", "caption": "Wind km/h", "width": "250px" }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "ExpansionPanel",
-            "caption": "Tag 7",
-            "expanded": false,
-            "items": [
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day7_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day7_TempMin", "caption": "Temp Min", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day7_TempMax", "caption": "Temp Max", "width": "250px" }
-                    ]
-                },
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day7_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day7_RainMM", "caption": "Regen mm", "width": "250px" },
-                        { "type": "SelectVariable", "name": "Day7_RainPct", "caption": "Regen %", "width": "250px" }
-                    ]
-                },
-                {
-                    "type": "RowLayout",
-                    "items": [
-                        { "type": "SelectVariable", "name": "Day7_WindSpeed", "caption": "Wind km/h", "width": "250px" }
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day7_Begin", "caption": "Beginn (Timestamp)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day7_TempMin", "caption": "Temp Min", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day7_TempMax", "caption": "Temp Max", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day7_Icon", "caption": "Icon-Code (OWM)", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day7_RainMM", "caption": "Regen mm", "width": "250px" },
+                                { "type": "SelectVariable", "name": "Day7_RainPct", "caption": "Regen %", "width": "250px" }
+                            ]
+                        },
+                        {
+                            "type": "RowLayout",
+                            "items": [
+                                { "type": "SelectVariable", "name": "Day7_WindSpeed", "caption": "Wind km/h", "width": "250px" }
+                            ]
+                        }
                     ]
                 }
             ]
