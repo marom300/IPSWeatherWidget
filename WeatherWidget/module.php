@@ -1014,16 +1014,16 @@ class WeatherWidget extends IPSModuleStrict
 
         $css = <<<CSS
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{background:transparent}
+html{background:transparent;--s:1}
 body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:100%;height:100%;display:flex;overflow:hidden}
-.icon-header{display:grid;grid-template-columns:repeat({$cols},1fr);width:100%;padding:clamp(4px,1vh,10px) clamp(4px,1vw,12px);gap:clamp(2px,0.5vw,6px);background:{$bgCss};border-radius:clamp(4px,1vmin,10px)}
-.ih-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(1px,0.3vh,4px)}
-.ih-day{font-size:clamp(9px,min(1.6vw,2vh),13px);font-weight:500;color:{$cDayLabel};line-height:1}
+.icon-header{display:grid;grid-template-columns:repeat({$cols},1fr);width:100%;padding:clamp(calc(4px*var(--s)),1vh,calc(10px*var(--s))) clamp(calc(4px*var(--s)),1vw,calc(12px*var(--s)));gap:clamp(calc(2px*var(--s)),0.5vw,calc(6px*var(--s)));background:{$bgCss};border-radius:clamp(calc(4px*var(--s)),1vmin,calc(10px*var(--s)))}
+.ih-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(calc(1px*var(--s)),0.3vh,calc(4px*var(--s)))}
+.ih-day{font-size:clamp(calc(9px*var(--s)),min(1.6vw,2vh),calc(13px*var(--s)));font-weight:500;color:{$cDayLabel};line-height:1}
 .ih-day.today{color:{$cToday};font-weight:700}
-.ih-icon{width:clamp(24px,min({$iconSize}px,8vw),{$iconSize}px);height:clamp(24px,min({$iconSize}px,8vw),{$iconSize}px)}
-.ih-temp{display:flex;gap:clamp(2px,0.4vw,6px);align-items:baseline;line-height:1}
-.ih-tmax{font-size:clamp(10px,min(2vw,2.4vh),16px);font-weight:600;color:{$cTempMax}}
-.ih-tmin{font-size:clamp(8px,min(1.6vw,2vh),13px);font-weight:400;color:{$cTempMin}}
+.ih-icon{width:clamp(calc(24px*var(--s)),min(calc({$iconSize}px*var(--s)),8vw),calc({$iconSize}px*var(--s)));height:clamp(calc(24px*var(--s)),min(calc({$iconSize}px*var(--s)),8vw),calc({$iconSize}px*var(--s)))}
+.ih-temp{display:flex;gap:clamp(calc(2px*var(--s)),0.4vw,calc(6px*var(--s)));align-items:baseline;line-height:1}
+.ih-tmax{font-size:clamp(calc(10px*var(--s)),min(2vw,2.4vh),calc(16px*var(--s)));font-weight:600;color:{$cTempMax}}
+.ih-tmin{font-size:clamp(calc(8px*var(--s)),min(1.6vw,2vh),calc(13px*var(--s)));font-weight:400;color:{$cTempMin}}
 .ih-cell.today .ih-tmax{color:{$cToday}}
 CSS;
 
@@ -1060,7 +1060,9 @@ CSS;
             $html .= '</div>';
         }
 
-        $html .= '</div></body></html>';
+        $html .= '</div>';
+        $html .= '<script>(function(){function s(){var w=document.documentElement.clientWidth,h=document.documentElement.clientHeight;document.documentElement.style.setProperty("--s",Math.min(w/800,h/480))}s();window.addEventListener("resize",s)})()</script>';
+        $html .= '</body></html>';
         return $html;
     }
 
@@ -1146,7 +1148,9 @@ CSS;
             }
         }
 
-        $html .= '</div></div></body></html>';
+        $html .= '</div></div>';
+        $html .= '<script>(function(){function s(){var w=document.documentElement.clientWidth,h=document.documentElement.clientHeight;document.documentElement.style.setProperty("--s",Math.min(w/800,h/480))}s();window.addEventListener("resize",s)})()</script>';
+        $html .= '</body></html>';
         return $html;
     }
 
@@ -1252,38 +1256,38 @@ CSS;
 
         return <<<CSS
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{background:transparent}
+html{background:transparent;--s:1}
 body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
-.header{display:flex;justify-content:flex-end;align-items:center;padding:clamp(4px,1vh,10px) clamp(8px,2vw,16px);flex-shrink:0}
-.last-update{font-size:clamp(8px,min(1.6vw,2vh),12px);color:#8b949e;font-weight:400}
-.widget{flex:1;display:flex;flex-direction:column;margin:0 clamp(4px,1.5vw,16px) clamp(4px,1vh,12px);background:{$widgetBg};border-radius:clamp(8px,2vmin,18px);border:{$widgetBorder};position:relative;padding:clamp(6px,1.5vh,16px) clamp(4px,1vw,12px);overflow:hidden}
+.header{display:flex;justify-content:flex-end;align-items:center;padding:clamp(calc(4px*var(--s)),1vh,calc(10px*var(--s))) clamp(calc(8px*var(--s)),2vw,calc(16px*var(--s)));flex-shrink:0}
+.last-update{font-size:clamp(calc(8px*var(--s)),min(1.6vw,2vh),calc(12px*var(--s)));color:#8b949e;font-weight:400}
+.widget{flex:1;display:flex;flex-direction:column;margin:0 clamp(calc(4px*var(--s)),1.5vw,calc(16px*var(--s))) clamp(calc(4px*var(--s)),1vh,calc(12px*var(--s)));background:{$widgetBg};border-radius:clamp(calc(8px*var(--s)),2vmin,calc(18px*var(--s)));border:{$widgetBorder};position:relative;padding:clamp(calc(6px*var(--s)),1.5vh,calc(16px*var(--s))) clamp(calc(4px*var(--s)),1vw,calc(12px*var(--s)));overflow:hidden}
 .weather-grid{flex:1;display:flex;flex-direction:column;min-height:0}
 .bars-area{flex:1;display:grid;grid-template-columns:repeat({$cols},1fr);position:relative;min-height:0}
 .bar-col{display:flex;flex-direction:column;align-items:center;position:relative}
-.bar-unit{position:absolute;display:flex;flex-direction:column;align-items:center;gap:clamp(2px,0.4vh,4px);width:100%}
-.temp-label-max{font-size:clamp(10px,min(2.2vw,2.8vh),18px);font-weight:600;color:{$cTMax};line-height:1;text-align:center}
+.bar-unit{position:absolute;display:flex;flex-direction:column;align-items:center;gap:clamp(calc(2px*var(--s)),0.4vh,calc(4px*var(--s)));width:100%}
+.temp-label-max{font-size:clamp(calc(10px*var(--s)),min(2.2vw,2.8vh),calc(18px*var(--s)));font-weight:600;color:{$cTMax};line-height:1;text-align:center}
 .bar-col.today .temp-label-max{color:{$cToday}}
-.bar-track{width:clamp(5px,min(1.2vw,1.5vh),10px);flex:1;min-height:4px;background:rgba(255,255,255,0.08);border-radius:100px;position:relative;overflow:hidden}
+.bar-track{width:clamp(calc(5px*var(--s)),min(1.2vw,1.5vh),calc(10px*var(--s)));flex:1;min-height:calc(4px*var(--s));background:rgba(255,255,255,0.08);border-radius:100px;position:relative;overflow:hidden}
 .bar-fill{position:absolute;inset:0;border-radius:100px;background:{$cTempB}}
-.bar-col.today .bar-fill{background:{$cToday};box-shadow:0 0 10px {$cToday}66}
-.temp-label-min{font-size:clamp(10px,min(2.2vw,2.8vh),18px);font-weight:600;color:{$cTMin};line-height:1;text-align:center}
-.rain-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(4px,0.8vh,8px) 0 clamp(2px,0.3vh,4px);gap:clamp(2px,0.5vw,6px)}
-.rain-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(2px,0.3vh,4px)}
-.rain-label{font-size:clamp(9px,min(1.8vw,2.2vh),15px);font-weight:600;color:{$cRainL};line-height:1}
+.bar-col.today .bar-fill{background:{$cToday};box-shadow:0 0 calc(10px*var(--s)) {$cToday}66}
+.temp-label-min{font-size:clamp(calc(10px*var(--s)),min(2.2vw,2.8vh),calc(18px*var(--s)));font-weight:600;color:{$cTMin};line-height:1;text-align:center}
+.rain-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(calc(4px*var(--s)),0.8vh,calc(8px*var(--s))) 0 clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s)));gap:clamp(calc(2px*var(--s)),0.5vw,calc(6px*var(--s)))}
+.rain-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s)))}
+.rain-label{font-size:clamp(calc(9px*var(--s)),min(1.8vw,2.2vh),calc(15px*var(--s)));font-weight:600;color:{$cRainL};line-height:1}
 .rain-label.zero{color:{$cRainLZ}}
-.rain-chance{font-size:clamp(7px,min(1.4vw,1.8vh),12px);font-weight:400;color:{$cRainC};line-height:1}
-.rain-bar-track{width:{$rW}%;height:{$rH}px;background:rgba(255,255,255,0.06);position:relative;overflow:hidden}
+.rain-chance{font-size:clamp(calc(7px*var(--s)),min(1.4vw,1.8vh),calc(12px*var(--s)));font-weight:400;color:{$cRainC};line-height:1}
+.rain-bar-track{width:{$rW}%;height:calc({$rH}px*var(--s));background:rgba(255,255,255,0.06);position:relative;overflow:hidden}
 .rain-bar-fill{position:absolute;bottom:0;left:0;width:100%;background:{$cRainB}}
-.wind-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(2px,0.3vh,4px) 0;gap:clamp(2px,0.5vw,6px)}
-.wind-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(2px,0.3vh,4px)}
-.wind-label{font-size:clamp(9px,min(1.8vw,2.2vh),15px);font-weight:600;color:{$cWindL};line-height:1;white-space:nowrap}
-.wind-bar-track{width:{$wW}%;height:{$wH}px;background:rgba(255,255,255,0.06);position:relative;overflow:hidden}
+.wind-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s))) 0;gap:clamp(calc(2px*var(--s)),0.5vw,calc(6px*var(--s)))}
+.wind-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s)))}
+.wind-label{font-size:clamp(calc(9px*var(--s)),min(1.8vw,2.2vh),calc(15px*var(--s)));font-weight:600;color:{$cWindL};line-height:1;white-space:nowrap}
+.wind-bar-track{width:{$wW}%;height:calc({$wH}px*var(--s));background:rgba(255,255,255,0.06);position:relative;overflow:hidden}
 .wind-bar-fill{position:absolute;bottom:0;left:0;width:100%;background:{$cWindB}}
-.icon-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(2px,0.4vh,4px) 0}
+.icon-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(calc(2px*var(--s)),0.4vh,calc(4px*var(--s))) 0}
 .icon-cell{display:flex;justify-content:center}
-.weather-icon{width:{$iconPx}px;height:{$iconPx}px;object-fit:contain}
-.day-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(2px,0.3vh,4px) 0 0}
-.day-cell{text-align:center;font-size:clamp(10px,min(2.2vw,2.8vh),18px);font-weight:600;color:{$cDayL};text-transform:uppercase;letter-spacing:.5px}
+.weather-icon{width:calc({$iconPx}px*var(--s));height:calc({$iconPx}px*var(--s));object-fit:contain}
+.day-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s))) 0 0}
+.day-cell{text-align:center;font-size:clamp(calc(10px*var(--s)),min(2.2vw,2.8vh),calc(18px*var(--s)));font-weight:600;color:{$cDayL};text-transform:uppercase;letter-spacing:.5px}
 .day-cell.today{color:{$cToday}}
 CSS;
     }
