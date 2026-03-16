@@ -147,6 +147,8 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyBoolean('ShowRain', true);
         $this->RegisterPropertyBoolean('ShowWind', true);
         $this->RegisterPropertyBoolean('ShowIconHeader', false);
+        $this->RegisterPropertyBoolean('IconHeaderShowDay', true);
+        $this->RegisterPropertyBoolean('IconHeaderShowTemp', true);
 
         // Zeilen-Reihenfolge (von oben nach unten)
         $this->RegisterPropertyString('RowPos1', 'temp');
@@ -982,6 +984,8 @@ class WeatherWidget extends IPSModuleStrict
         $cDayLabel = $this->IntToHex($this->ReadPropertyInteger('ColorDayLabel'));
         $cTempMax = $this->IntToHex($this->ReadPropertyInteger('ColorTempMax'));
         $cTempMin = $this->IntToHex($this->ReadPropertyInteger('ColorTempMin'));
+        $showDay = $this->ReadPropertyBoolean('IconHeaderShowDay');
+        $showTemp = $this->ReadPropertyBoolean('IconHeaderShowTemp');
         $cols = count($days);
 
         $css = <<<CSS
@@ -1011,17 +1015,23 @@ CSS;
             $cls = $today ? ' today' : '';
 
             $html .= "<div class=\"ih-cell{$cls}\">";
-            $html .= "<div class=\"ih-day{$cls}\">{$wd}</div>";
+
+            if ($showDay) {
+                $html .= "<div class=\"ih-day{$cls}\">{$wd}</div>";
+            }
 
             if ($day['icon'] !== '') {
                 $url = $this->GetIconUrl($day['icon']);
                 $html .= "<img class=\"ih-icon\" src=\"{$url}\" alt=\"{$wd}\" loading=\"lazy\">";
             }
 
-            $html .= '<div class="ih-temp">';
-            $html .= '<span class="ih-tmax">' . round($day['tMax']) . '°</span>';
-            $html .= '<span class="ih-tmin">' . round($day['tMin']) . '°</span>';
-            $html .= '</div>';
+            if ($showTemp) {
+                $html .= '<div class="ih-temp">';
+                $html .= '<span class="ih-tmax">' . round($day['tMax']) . '°</span>';
+                $html .= '<span class="ih-tmin">' . round($day['tMin']) . '°</span>';
+                $html .= '</div>';
+            }
+
             $html .= '</div>';
         }
 

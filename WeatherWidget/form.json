@@ -126,7 +126,17 @@
                 {
                     "type": "CheckBox",
                     "name": "ShowIconHeader",
-                    "caption": "Kompakter Icon-Header (zusätzliche HTMLBox mit nur Icons + Wochentag + Temperatur)"
+                    "caption": "Kompakter Icon-Header (zusätzliche HTMLBox)"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "IconHeaderShowDay",
+                    "caption": "↳ Wochentag im Icon-Header anzeigen"
+                },
+                {
+                    "type": "CheckBox",
+                    "name": "IconHeaderShowTemp",
+                    "caption": "↳ Temperatur im Icon-Header anzeigen"
                 }
             ]
         },
