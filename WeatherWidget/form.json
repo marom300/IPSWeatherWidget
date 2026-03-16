@@ -172,6 +172,15 @@
                             "type": "SelectColor",
                             "name": "IconHeaderBgColor",
                             "caption": "Hintergrundfarbe"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "IconHeaderBgOpacity",
+                            "caption": "Deckkraft",
+                            "minimum": 0,
+                            "maximum": 100,
+                            "suffix": "%",
+                            "width": "160px"
                         }
                     ]
                 }
@@ -316,6 +325,15 @@
                             "type": "SelectColor",
                             "name": "WidgetBgColor",
                             "caption": "Hintergrundfarbe"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "WidgetBgOpacity",
+                            "caption": "Deckkraft",
+                            "minimum": 0,
+                            "maximum": 100,
+                            "suffix": "%",
+                            "width": "160px"
                         }
                     ]
                 },

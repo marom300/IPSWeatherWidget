@@ -151,6 +151,7 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyBoolean('IconHeaderShowTemp', true);
         $this->RegisterPropertyInteger('IconHeaderIconSize', 40);
         $this->RegisterPropertyInteger('IconHeaderBgColor', -1); // -1 = transparent
+        $this->RegisterPropertyInteger('IconHeaderBgOpacity', 0); // 0-100%
 
         // Zeilen-Reihenfolge (von oben nach unten)
         $this->RegisterPropertyString('RowPos1', 'temp');
@@ -179,6 +180,7 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyInteger('ColorDayLabel', 0xFFFFFF);
         $this->RegisterPropertyInteger('ColorTempBar', 0xD4A017);
         $this->RegisterPropertyInteger('WidgetBgColor', -1); // -1 = transparent/Standard-Gradient
+        $this->RegisterPropertyInteger('WidgetBgOpacity', 0); // 0-100%
 
         // Tag 1-7 Variablen-IDs
         for ($i = 1; $i <= 7; $i++) {
@@ -953,6 +955,22 @@ class WeatherWidget extends IPSModuleStrict
     }
 
     /**
+     * Farb-Integer + Deckkraft (0-100) zu CSS rgba() String
+     * Opacity 0 = transparent, 100 = voll deckend
+     */
+    private function IntToRgba(int $color, int $opacity): string
+    {
+        if ($opacity <= 0) {
+            return 'transparent';
+        }
+        $r = ($color >> 16) & 0xFF;
+        $g = ($color >> 8) & 0xFF;
+        $b = $color & 0xFF;
+        $a = round($opacity / 100, 2);
+        return "rgba({$r},{$g},{$b},{$a})";
+    }
+
+    /**
      * Zeilen-Reihenfolge aus Properties lesen
      */
     private function GetRowOrder(): array
@@ -990,13 +1008,15 @@ class WeatherWidget extends IPSModuleStrict
         $showDay = $this->ReadPropertyBoolean('IconHeaderShowDay');
         $showTemp = $this->ReadPropertyBoolean('IconHeaderShowTemp');
         $bgColorInt = $this->ReadPropertyInteger('IconHeaderBgColor');
-        $bgCss = ($bgColorInt === -1) ? 'transparent' : $this->IntToHex($bgColorInt);
+        $bgOpacity = $this->ReadPropertyInteger('IconHeaderBgOpacity');
+        $bgCss = ($bgColorInt === -1 || $bgOpacity <= 0) ? 'transparent' : $this->IntToRgba($bgColorInt, $bgOpacity);
         $cols = count($days);
 
         $css = <<<CSS
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;background:{$bgCss};color:#e6edf3;width:100%;height:100%;display:flex;overflow:hidden}
-.icon-header{display:grid;grid-template-columns:repeat({$cols},1fr);width:100%;padding:clamp(4px,1vh,10px) clamp(4px,1vw,12px);gap:clamp(2px,0.5vw,6px)}
+html{background:transparent}
+body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:100%;height:100%;display:flex;overflow:hidden}
+.icon-header{display:grid;grid-template-columns:repeat({$cols},1fr);width:100%;padding:clamp(4px,1vh,10px) clamp(4px,1vw,12px);gap:clamp(2px,0.5vw,6px);background:{$bgCss};border-radius:clamp(4px,1vmin,10px)}
 .ih-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(1px,0.3vh,4px)}
 .ih-day{font-size:clamp(9px,min(1.6vw,2vh),13px);font-weight:500;color:{$cDayLabel};line-height:1}
 .ih-day.today{color:{$cToday};font-weight:700}
@@ -1082,12 +1102,13 @@ CSS;
 
         $updateTime = date('d.m. H:i');
 
-        // Hintergrundfarbe
+        // Hintergrundfarbe + Deckkraft
         $bgColorInt = $this->ReadPropertyInteger('WidgetBgColor');
-        $bgCss = ($bgColorInt === -1) ? 'transparent' : $this->IntToHex($bgColorInt);
+        $bgOpacity = $this->ReadPropertyInteger('WidgetBgOpacity');
+        $widgetBg = ($bgColorInt === -1 || $bgOpacity <= 0) ? 'transparent' : $this->IntToRgba($bgColorInt, $bgOpacity);
 
         // CSS bauen
-        $css = $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW, $iconSize, $cTempMax, $cTempMin, $cToday, $cRainLabel, $cRainLabelZero, $cRainChance, $cRainBar, $cWindLabel, $cWindBar, $cDayLabel, $cTempBar, $bgCss);
+        $css = $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW, $iconSize, $cTempMax, $cTempMin, $cToday, $cRainLabel, $cRainLabelZero, $cRainChance, $cRainBar, $cWindLabel, $cWindBar, $cDayLabel, $cTempBar, $widgetBg);
 
         // HTML zusammenbauen
         $html = '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">';
@@ -1225,19 +1246,17 @@ CSS;
     /**
      * CSS mit konfigurierbaren Dimensionen und Farben
      */
-    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW, int $iconPx, string $cTMax, string $cTMin, string $cToday, string $cRainL, string $cRainLZ, string $cRainC, string $cRainB, string $cWindL, string $cWindB, string $cDayL, string $cTempB, string $bgCss = 'transparent'): string
+    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW, int $iconPx, string $cTMax, string $cTMin, string $cToday, string $cRainL, string $cRainLZ, string $cRainC, string $cRainB, string $cWindL, string $cWindB, string $cDayL, string $cTempB, string $widgetBg = 'transparent'): string
     {
-        $widgetBg = ($bgCss === 'transparent')
-            ? 'transparent'
-            : 'linear-gradient(to bottom,rgba(86,86,86,0.5),rgba(54,54,54,0.5))';
+        $widgetBorder = ($widgetBg === 'transparent') ? 'none' : '1px solid rgba(255,255,255,0.06)';
 
         return <<<CSS
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{background:{$bgCss}}
-body{font-family:'Inter',sans-serif;background:{$bgCss};color:#e6edf3;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
+html{background:transparent}
+body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
 .header{display:flex;justify-content:flex-end;align-items:center;padding:clamp(4px,1vh,10px) clamp(8px,2vw,16px);flex-shrink:0}
 .last-update{font-size:clamp(8px,min(1.6vw,2vh),12px);color:#8b949e;font-weight:400}
-.widget{flex:1;display:flex;flex-direction:column;margin:0 clamp(4px,1.5vw,16px) clamp(4px,1vh,12px);background:{$widgetBg};border-radius:clamp(8px,2vmin,18px);border:1px solid rgba(255,255,255,0.06);position:relative;padding:clamp(6px,1.5vh,16px) clamp(4px,1vw,12px);overflow:hidden}
+.widget{flex:1;display:flex;flex-direction:column;margin:0 clamp(4px,1.5vw,16px) clamp(4px,1vh,12px);background:{$widgetBg};border-radius:clamp(8px,2vmin,18px);border:{$widgetBorder};position:relative;padding:clamp(6px,1.5vh,16px) clamp(4px,1vw,12px);overflow:hidden}
 .weather-grid{flex:1;display:flex;flex-direction:column;min-height:0}
 .bars-area{flex:1;display:grid;grid-template-columns:repeat({$cols},1fr);position:relative;min-height:0}
 .bar-col{display:flex;flex-direction:column;align-items:center;position:relative}
