@@ -343,6 +343,37 @@
                 },
                 {
                     "type": "Label",
+                    "caption": "Icon-Set"
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "Select",
+                            "name": "IconStyle",
+                            "caption": "Icon-Style",
+                            "width": "300px",
+                            "options": [
+                                { "caption": "Bas Milius - Fill (animiert)", "value": "basmilius_fill" },
+                                { "caption": "Bas Milius - Line (animiert)", "value": "basmilius_line" },
+                                { "caption": "OpenWeatherMap (Standard)", "value": "owm" },
+                                { "caption": "Benutzerdefiniert", "value": "custom" }
+                            ]
+                        },
+                        {
+                            "type": "ValidationTextBox",
+                            "name": "CustomIconBaseURL",
+                            "caption": "Eigene Icon-URL (Basis-Pfad)",
+                            "width": "450px"
+                        }
+                    ]
+                },
+                {
+                    "type": "Label",
+                    "caption": " "
+                },
+                {
+                    "type": "Label",
                     "caption": "Farben"
                 },
                 {

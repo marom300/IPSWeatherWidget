@@ -38,7 +38,10 @@ class WeatherWidget extends IPSModuleStrict
         '50n' => 'mist',
     ];
 
-    private const ICON_BASE = 'https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/fill/svg';
+    private const ICON_BASES = [
+        'basmilius_fill' => 'https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/fill/svg',
+        'basmilius_line' => 'https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/line/svg',
+    ];
     private const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
     // Keyword→Icon-Mapping für Text-Vorhersagen (Wunderground etc.)
@@ -152,6 +155,10 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyInteger('IconHeaderIconSize', 40);
         $this->RegisterPropertyInteger('IconHeaderBgColor', -1); // -1 = transparent
         $this->RegisterPropertyInteger('IconHeaderBgOpacity', 0); // 0-100%
+
+        // Icon-Style
+        $this->RegisterPropertyString('IconStyle', 'basmilius_fill');
+        $this->RegisterPropertyString('CustomIconBaseURL', '');
 
         // Zeilen-Reihenfolge (von oben nach unten)
         $this->RegisterPropertyString('RowPos1', 'temp');
@@ -906,26 +913,55 @@ class WeatherWidget extends IPSModuleStrict
     }
 
     /**
+     * Aktuelle Icon-Base-URL ermitteln (aus Property oder Konstante)
+     */
+    private function GetIconBase(): string
+    {
+        $style = $this->ReadPropertyString('IconStyle');
+
+        if ($style === 'custom') {
+            $customUrl = trim($this->ReadPropertyString('CustomIconBaseURL'));
+            return rtrim($customUrl, '/');
+        }
+
+        return self::ICON_BASES[$style] ?? self::ICON_BASES['basmilius_fill'];
+    }
+
+    /**
      * Icon-URL aus OWM-Code oder Vorhersage-Text generieren
      */
     private function GetIconUrl(string $iconValue): string
     {
+        $base = $this->GetIconBase();
+        $style = $this->ReadPropertyString('IconStyle');
+
+        // Sonderfall: OWM Standard-Icons (kein Mapping nötig)
+        if ($style === 'owm') {
+            // OWM-Code direkt verwenden
+            if (preg_match('/^\d{2}[dn]$/', $iconValue)) {
+                return "https://openweathermap.org/img/wn/{$iconValue}@2x.png";
+            }
+            // MET Norway → OWM-Code Mapping
+            $owmCode = $this->MapToOWMCode($iconValue);
+            return "https://openweathermap.org/img/wn/{$owmCode}@2x.png";
+        }
+
         // 1. Exakter OWM-Code (z.B. "01d", "10n")
         if (isset(self::ICON_MAP[$iconValue])) {
-            return self::ICON_BASE . '/' . self::ICON_MAP[$iconValue] . '.svg';
+            return $base . '/' . self::ICON_MAP[$iconValue] . '.svg';
         }
 
         // 2. MET Norway Symbol-Code (z.B. "clearsky_day", "rain", "partlycloudy_night")
         $metIcon = $this->MapMETNorwayIcon($iconValue);
         if ($metIcon !== null) {
-            return self::ICON_BASE . '/' . $metIcon . '.svg';
+            return $base . '/' . $metIcon . '.svg';
         }
 
         // 3. Text-Vorhersage (z.B. "Bewölkt", "Partly Cloudy") → Keyword-Matching
         $lower = mb_strtolower($iconValue, 'UTF-8');
         foreach (self::FORECAST_TEXT_MAP as $keyword => $iconName) {
             if (mb_strpos($lower, $keyword) !== false) {
-                return self::ICON_BASE . '/' . $iconName . '.svg';
+                return $base . '/' . $iconName . '.svg';
             }
         }
 
@@ -935,7 +971,58 @@ class WeatherWidget extends IPSModuleStrict
         }
 
         // 5. Unbekannter Text → generisches Wolken-Icon
-        return self::ICON_BASE . '/not-available.svg';
+        return $base . '/not-available.svg';
+    }
+
+    /**
+     * Hilfsfunktion: Beliebigen Icon-Wert auf OWM-Code mappen (für OWM Standard-Icons)
+     */
+    private function MapToOWMCode(string $iconValue): string
+    {
+        // MET Norway Symbol-Codes → OWM-Code
+        $metToOwm = [
+            'clearsky'       => '01d', 'fair'             => '02d',
+            'partlycloudy'   => '03d', 'cloudy'           => '04d',
+            'fog'            => '50d', 'lightrainshowers' => '09d',
+            'rainshowers'    => '10d', 'heavyrainshowers' => '10d',
+            'rain'           => '10d', 'lightrain'        => '09d',
+            'heavyrain'      => '10d', 'drizzle'          => '09d',
+            'sleet'          => '13d', 'snow'             => '13d',
+            'lightsnow'      => '13d', 'heavysnow'        => '13d',
+            'snowshowers'    => '13d', 'thunder'           => '11d',
+            'rainandthunder' => '11d', 'snowandthunder'   => '11d',
+        ];
+
+        // Tag/Nacht-Suffix entfernen
+        $base = preg_replace('/_(day|night|polartwilight)$/', '', $iconValue);
+        $isDaylight = !str_contains($iconValue, '_night');
+        $suffix = $isDaylight ? 'd' : 'n';
+
+        if (isset($metToOwm[$base])) {
+            $code = $metToOwm[$base];
+            return substr($code, 0, 2) . $suffix;
+        }
+
+        // Text-basiertes Matching
+        $lower = mb_strtolower($iconValue, 'UTF-8');
+        $textToOwm = [
+            'gewitter' => '11d', 'thunder' => '11d',
+            'schnee'   => '13d', 'snow'    => '13d',
+            'regen'    => '10d', 'rain'    => '10d',
+            'schauer'  => '09d', 'drizzle' => '09d',
+            'nebel'    => '50d', 'fog'     => '50d', 'mist' => '50d',
+            'wolkig'   => '04d', 'cloudy'  => '04d', 'overcast' => '04d',
+            'bewölkt'  => '03d', 'partly'  => '02d',
+            'sonnig'   => '01d', 'clear'   => '01d', 'sunny' => '01d',
+        ];
+
+        foreach ($textToOwm as $keyword => $code) {
+            if (mb_strpos($lower, $keyword) !== false) {
+                return $code;
+            }
+        }
+
+        return '03d'; // Fallback: bewölkt
     }
 
     /**
