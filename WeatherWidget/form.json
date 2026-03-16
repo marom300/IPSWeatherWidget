@@ -37,6 +37,11 @@
                             "type": "Button",
                             "caption": "🚀 Variablen automatisch erkennen & zuweisen",
                             "onClick": "echo WTR_AutoConfigure($id);"
+                        },
+                        {
+                            "type": "Button",
+                            "caption": "🔍 Idents der Instanz anzeigen (Diagnose)",
+                            "onClick": "echo WTR_ScanIdents($id);"
                         }
                     ]
                 }

@@ -38,15 +38,15 @@ class WeatherWidget extends IPSModuleStrict
     private const ICON_BASE = 'https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/fill/svg';
     private const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
-    // OpenWeatherOneCall Ident-Mapping: Widget-Feld → OWM-Ident-Prefix
+    // OpenWeatherOneCall Ident-Mapping: Widget-Feld → mögliche Ident-Prefixes (verschiedene Modul-Versionen)
     private const OWM_IDENT_MAP = [
-        'Begin'     => 'Daily_Timestamp',
-        'TempMin'   => 'Daily_TempMin',
-        'TempMax'   => 'Daily_TempMax',
-        'Icon'      => 'Daily_ConditionIcon',
-        'RainMM'    => 'Daily_Rain',
-        'RainPct'   => 'Daily_RainProbability',
-        'WindSpeed'  => 'Daily_WindSpeed',
+        'Begin'     => ['Daily_Timestamp', 'DailyForecastBegin', 'daily_timestamp', 'ForecastBegin'],
+        'TempMin'   => ['Daily_TempMin', 'DailyTempMin', 'daily_tempmin', 'DailyForecastTempMin', 'ForecastTempMin'],
+        'TempMax'   => ['Daily_TempMax', 'DailyTempMax', 'daily_tempmax', 'DailyForecastTempMax', 'ForecastTempMax'],
+        'Icon'      => ['Daily_ConditionIcon', 'DailyConditionIcon', 'daily_conditionicon', 'DailyForecastIcon', 'ForecastIcon', 'DailyWeatherIcon'],
+        'RainMM'    => ['Daily_Rain', 'DailyRain', 'daily_rain', 'DailyForecastRain', 'ForecastRain'],
+        'RainPct'   => ['Daily_RainProbability', 'DailyRainProbability', 'daily_rainprobability', 'DailyForecastRainProbability', 'ForecastRainProbability'],
+        'WindSpeed'  => ['Daily_WindSpeed', 'DailyWindSpeed', 'daily_windspeed', 'DailyForecastWindSpeed', 'ForecastWindSpeed'],
     ];
 
     public function Create(): void
@@ -142,51 +142,34 @@ class WeatherWidget extends IPSModuleStrict
     }
 
     /**
-     * Auto-Erkennung: Variablen aus OpenWeather-Instanz ermitteln
-     * Aufrufbar via WTR_DetectVariables($InstanceID)
+     * Alle Idents der Quell-Instanz auflisten (Diagnose)
+     * Aufrufbar via WTR_ScanIdents($InstanceID)
      */
-    public function DetectVariables(): string
+    public function ScanIdents(): string
     {
         $sourceID = $this->ReadPropertyInteger('SourceInstance');
         if ($sourceID === 0 || !IPS_ObjectExists($sourceID)) {
-            return json_encode(['error' => 'Bitte zuerst eine OpenWeather-Instanz auswählen und Konfiguration speichern.']);
+            return 'Bitte zuerst eine OpenWeather-Instanz auswählen und Konfiguration speichern.';
         }
 
-        $dayCount = $this->ReadPropertyInteger('DayCount');
-        $startDay = $this->ReadPropertyInteger('StartDay');
-        $found = [];
-        $missing = [];
-
-        for ($i = 1; $i <= $dayCount; $i++) {
-            $owmDay = $startDay + ($i - 1); // D0, D1, D2, ... oder D1, D2, D3, ...
-
-            foreach (self::OWM_IDENT_MAP as $field => $identPrefix) {
-                $ident = "{$identPrefix}_D{$owmDay}";
-                $propName = "Day{$i}_{$field}";
-
-                $varID = @IPS_GetObjectIDByIdent($ident, $sourceID);
-                if ($varID !== false) {
-                    $found[$propName] = $varID;
-                } else {
-                    $missing[] = "Tag {$i}: {$field} (Ident: {$ident})";
-                }
-            }
+        $childIDs = IPS_GetChildrenIDs($sourceID);
+        $idents = [];
+        foreach ($childIDs as $childID) {
+            $obj = IPS_GetObject($childID);
+            $idents[] = $obj['ObjectIdent'] . ' → ' . $obj['ObjectName'] . ' (ID: ' . $childID . ')';
         }
+        sort($idents);
 
-        // Ergebnis zurückgeben
-        $result = [
-            'found'   => $found,
-            'missing' => $missing,
-            'count'   => count($found),
-            'total'   => $dayCount * count(self::OWM_IDENT_MAP),
-        ];
+        $msg = "Gefundene Idents in Instanz #{$sourceID}:\n\n";
+        $msg .= implode("\n", $idents);
 
-        $this->SendDebug('DetectVariables', json_encode($result), 0);
-        return json_encode($result);
+        $this->SendDebug('ScanIdents', $msg, 0);
+        return $msg;
     }
 
     /**
      * Auto-Erkennung durchführen und Variablen direkt setzen
+     * Sucht flexibel nach passenden Idents per Keyword-Matching
      * Aufrufbar via WTR_AutoConfigure($InstanceID)
      */
     public function AutoConfigure(): string
@@ -198,22 +181,44 @@ class WeatherWidget extends IPSModuleStrict
 
         $dayCount = $this->ReadPropertyInteger('DayCount');
         $startDay = $this->ReadPropertyInteger('StartDay');
+
+        // Alle Kind-Variablen mit Idents einlesen
+        $childIDs = IPS_GetChildrenIDs($sourceID);
+        $identMap = []; // ident (lowercase) → varID
+        foreach ($childIDs as $childID) {
+            $obj = IPS_GetObject($childID);
+            if ($obj['ObjectIdent'] !== '') {
+                $identMap[strtolower($obj['ObjectIdent'])] = $childID;
+            }
+        }
+
         $foundCount = 0;
         $missingList = [];
 
         for ($i = 1; $i <= $dayCount; $i++) {
             $owmDay = $startDay + ($i - 1);
+            $daySuffix = "_D{$owmDay}";
+            $daySuffixLower = strtolower($daySuffix);
 
-            foreach (self::OWM_IDENT_MAP as $field => $identPrefix) {
-                $ident = "{$identPrefix}_D{$owmDay}";
+            // Für jedes Widget-Feld die passende Variable suchen
+            foreach (self::OWM_IDENT_MAP as $field => $identPatterns) {
                 $propName = "Day{$i}_{$field}";
+                $varID = false;
 
-                $varID = @IPS_GetObjectIDByIdent($ident, $sourceID);
+                // Alle Muster durchprobieren
+                foreach ($identPatterns as $pattern) {
+                    $search = strtolower($pattern) . $daySuffixLower;
+                    if (isset($identMap[$search])) {
+                        $varID = $identMap[$search];
+                        break;
+                    }
+                }
+
                 if ($varID !== false) {
                     IPS_SetProperty($this->InstanceID, $propName, $varID);
                     $foundCount++;
                 } else {
-                    $missingList[] = "Tag {$i}: {$field} ({$ident})";
+                    $missingList[] = "Tag {$i}: {$field}";
                 }
             }
         }
