@@ -573,7 +573,12 @@
                 },
                 {
                     "type": "Label",
-                    "caption": "Sag danke und unterstütze den Modulentwickler: <a href='https://paypal.me/marom300' target='_blank'>paypal.me/marom300</a>"
+                    "caption": "Sag danke und unterstütze den Modulentwickler:"
+                },
+                {
+                    "type": "Button",
+                    "caption": "paypal.me/marom300",
+                    "onClick": "echo 'https://paypal.me/marom300';"
                 }
             ]
         }
