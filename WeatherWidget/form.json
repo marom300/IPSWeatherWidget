@@ -692,6 +692,31 @@
                     "onClick": "echo 'https://paypal.me/marom300';"
                 }
             ]
+        },
+        {
+            "type": "ExpansionPanel",
+            "caption": "In Planung",
+            "expanded": false,
+            "items": [
+                {
+                    "type": "Label",
+                    "bold": true,
+                    "caption": "Kommende Features"
+                },
+                {
+                    "type": "Label",
+                    "caption": "---"
+                },
+                {
+                    "type": "Label",
+                    "bold": true,
+                    "caption": "Stundliche Vorhersage (naechste 24h)"
+                },
+                {
+                    "type": "Label",
+                    "caption": "Kompakte Stundenansicht mit Icon + Temperatur als eigene HTMLBox-Variable. Ideal fuer die Frage: Was passiert in den naechsten Stunden?"
+                }
+            ]
         }
     ],
     "status": [

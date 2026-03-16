@@ -913,38 +913,33 @@ class WeatherWidget extends IPSModuleStrict
     }
 
     /**
-     * Aktuelle Icon-Base-URL ermitteln (aus Property oder Konstante)
-     */
-    private function GetIconBase(): string
-    {
-        $style = $this->ReadPropertyString('IconStyle');
-
-        if ($style === 'custom') {
-            $customUrl = trim($this->ReadPropertyString('CustomIconBaseURL'));
-            return rtrim($customUrl, '/');
-        }
-
-        return self::ICON_BASES[$style] ?? self::ICON_BASES['basmilius_fill'];
-    }
-
-    /**
      * Icon-URL aus OWM-Code oder Vorhersage-Text generieren
      */
     private function GetIconUrl(string $iconValue): string
     {
-        $base = $this->GetIconBase();
         $style = $this->ReadPropertyString('IconStyle');
 
-        // Sonderfall: OWM Standard-Icons (kein Mapping nötig)
-        if ($style === 'owm') {
-            // OWM-Code direkt verwenden
+        // === OWM Standard-Icons oder Benutzerdefiniert ===
+        // Beide nutzen OWM-Codes als Dateinamen (01d, 10n, etc.)
+        if ($style === 'owm' || $style === 'custom') {
+            // OWM-Code ermitteln (falls nicht schon einer)
             if (preg_match('/^\d{2}[dn]$/', $iconValue)) {
-                return "https://openweathermap.org/img/wn/{$iconValue}@2x.png";
+                $owmCode = $iconValue;
+            } else {
+                $owmCode = $this->MapToOWMCode($iconValue);
             }
-            // MET Norway → OWM-Code Mapping
-            $owmCode = $this->MapToOWMCode($iconValue);
-            return "https://openweathermap.org/img/wn/{$owmCode}@2x.png";
+
+            if ($style === 'owm') {
+                return "https://openweathermap.org/img/wn/{$owmCode}@2x.png";
+            }
+
+            // Custom: Base-URL + OWM-Code + .svg
+            $base = rtrim(trim($this->ReadPropertyString('CustomIconBaseURL')), '/');
+            return $base . '/' . $owmCode . '.svg';
         }
+
+        // === Bas Milius Icon-Sets (Fill / Line) ===
+        $base = self::ICON_BASES[$style] ?? self::ICON_BASES['basmilius_fill'];
 
         // 1. Exakter OWM-Code (z.B. "01d", "10n")
         if (isset(self::ICON_MAP[$iconValue])) {

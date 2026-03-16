@@ -11,7 +11,7 @@ Konfigurierbares Wetter-Vorhersage-Widget für IP-Symcon im modernen WaWö-Stil.
 - **Temperaturbalken** mit Min/Max-Werten und globaler Skalierung
 - **Niederschlag** mit mm-Angabe, Wahrscheinlichkeit in % und vertikalem Balken
 - **Windgeschwindigkeit** mit vertikalem Balken
-- **Animierte Wetter-Icons** (Bas Milius Weather Icons, SVG-basiert)
+- **Wählbare Icon-Sets** – Bas Milius Fill/Line (animiert), OWM Standard, oder eigene Icons per URL
 - **Optionaler Icon-Header** – kompakte Ansicht als separate HTMLBox-Variable
 - **Frei konfigurierbare Zeilen-Reihenfolge** (Temperatur, Regen, Wind, Icons, Wochentage)
 - **12 individuell einstellbare Farben** + Hintergrundfarbe mit Deckkraft-Slider (0–100%)
@@ -95,6 +95,43 @@ Konfigurierbares Wetter-Vorhersage-Widget für IP-Symcon im modernen WaWö-Stil.
 | Hintergrundfarbe | Farbe der Widget-Box | transparent |
 | Deckkraft | Transparenz 0–100% | 0% |
 
+### Icon-Set
+
+Das Widget unterstützt verschiedene Icon-Styles:
+
+| Option | Beschreibung |
+|---|---|
+| **Bas Milius - Fill** (Standard) | Animierte SVG-Icons, ausgefüllter Stil |
+| **Bas Milius - Line** | Animierte SVG-Icons, feiner Linien-Stil |
+| **OpenWeatherMap** | Standard OWM PNG-Icons |
+| **Benutzerdefiniert** | Eigene Icons über eine Base-URL einbinden |
+
+#### Eigene Icons verwenden
+
+Bei **"Benutzerdefiniert"** trägst du eine Base-URL ein, unter der deine Icons liegen. Die Icons müssen nach den **OpenWeatherMap-Codes** benannt sein:
+
+**Beispiel:** Base-URL = `https://meinserver.de/wetter/icons`
+
+Das Widget lädt dann z.B. `https://meinserver.de/wetter/icons/01d.svg`
+
+**Benötigte Dateien (18 Icons):**
+
+| Dateiname | Wetter |
+|---|---|
+| `01d.svg` / `01n.svg` | Klarer Himmel (Tag / Nacht) |
+| `02d.svg` / `02n.svg` | Leicht bewölkt |
+| `03d.svg` / `03n.svg` | Bewölkt |
+| `04d.svg` / `04n.svg` | Stark bewölkt |
+| `09d.svg` / `09n.svg` | Schauer |
+| `10d.svg` / `10n.svg` | Regen |
+| `11d.svg` / `11n.svg` | Gewitter |
+| `13d.svg` / `13n.svg` | Schnee |
+| `50d.svg` / `50n.svg` | Nebel |
+
+> **Tipp:** Die Dateien können auch `.png` oder `.gif` sein — dann die URL entsprechend anpassen. SVG wird empfohlen für beste Skalierung.
+
+> **Hinweis:** Bei allen Datenquellen (OWM, MET Norway, Text-Vorhersagen) werden die Icon-Codes automatisch auf diese 18 OWM-Codes gemappt.
+
 ### Farben
 
 | Farbe | Beschreibung | Standard |
@@ -175,12 +212,16 @@ Für Module die Text-Vorhersagen liefern (z.B. Weather Underground) werden 60+ S
 | `WTR_ScanIdents($id)` | Alle Identifiers im Quell-Modul anzeigen |
 | `WTR_FetchMETNorway($id)` | MET Norway API manuell abrufen |
 
+## Geplante Features
+
+- **Stündliche Vorhersage (nächste 24h)** — Kompakte Stundenansicht mit Icon + Temperatur als eigene HTMLBox-Variable
+
 ## Changelog
 
 ### 1.0.0
 - Erstveröffentlichung
 - Temperatur-, Regen- und Wind-Darstellung
-- Animierte Bas Milius Icons
+- Wählbare Icon-Sets (Bas Milius Fill/Line, OWM Standard, Benutzerdefiniert)
 - Responsive Design
 - Konfigurierbare Balken-Dimensionen
 - Auto-Konfiguration für OpenWeather, Weather Underground, MET Norway
