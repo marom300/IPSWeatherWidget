@@ -2,12 +2,12 @@
     "elements": [
         {
             "type": "ExpansionPanel",
-            "caption": "Auto-Erkennung (OpenWeather)",
+            "caption": "Auto-Erkennung (OpenWeather / WeatherUnderground)",
             "expanded": true,
             "items": [
                 {
                     "type": "Label",
-                    "caption": "Optional: Wetter-Instanz auswählen und Variablen automatisch erkennen. Funktioniert mit OpenWeatherOneCall. Für andere Wetter-Module die Variablen unten manuell zuweisen."
+                    "caption": "Optional: Wetter-Instanz auswählen und Variablen automatisch erkennen. Funktioniert mit OpenWeatherOneCall und WeatherUnderground. Für andere Wetter-Module die Variablen unten manuell zuweisen."
                 },
                 {
                     "type": "RowLayout",
@@ -85,6 +85,84 @@
             "caption": "Darstellung",
             "expanded": false,
             "items": [
+                {
+                    "type": "Label",
+                    "caption": "Zeilen-Reihenfolge (von oben nach unten)"
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "Select",
+                            "name": "RowPos1",
+                            "caption": "Position 1",
+                            "width": "180px",
+                            "options": [
+                                { "caption": "Temperatur", "value": "temp" },
+                                { "caption": "Niederschlag", "value": "rain" },
+                                { "caption": "Wind", "value": "wind" },
+                                { "caption": "Icons", "value": "icons" },
+                                { "caption": "Wochentag", "value": "days" }
+                            ]
+                        },
+                        {
+                            "type": "Select",
+                            "name": "RowPos2",
+                            "caption": "Position 2",
+                            "width": "180px",
+                            "options": [
+                                { "caption": "Temperatur", "value": "temp" },
+                                { "caption": "Niederschlag", "value": "rain" },
+                                { "caption": "Wind", "value": "wind" },
+                                { "caption": "Icons", "value": "icons" },
+                                { "caption": "Wochentag", "value": "days" }
+                            ]
+                        },
+                        {
+                            "type": "Select",
+                            "name": "RowPos3",
+                            "caption": "Position 3",
+                            "width": "180px",
+                            "options": [
+                                { "caption": "Temperatur", "value": "temp" },
+                                { "caption": "Niederschlag", "value": "rain" },
+                                { "caption": "Wind", "value": "wind" },
+                                { "caption": "Icons", "value": "icons" },
+                                { "caption": "Wochentag", "value": "days" }
+                            ]
+                        },
+                        {
+                            "type": "Select",
+                            "name": "RowPos4",
+                            "caption": "Position 4",
+                            "width": "180px",
+                            "options": [
+                                { "caption": "Temperatur", "value": "temp" },
+                                { "caption": "Niederschlag", "value": "rain" },
+                                { "caption": "Wind", "value": "wind" },
+                                { "caption": "Icons", "value": "icons" },
+                                { "caption": "Wochentag", "value": "days" }
+                            ]
+                        },
+                        {
+                            "type": "Select",
+                            "name": "RowPos5",
+                            "caption": "Position 5",
+                            "width": "180px",
+                            "options": [
+                                { "caption": "Temperatur", "value": "temp" },
+                                { "caption": "Niederschlag", "value": "rain" },
+                                { "caption": "Wind", "value": "wind" },
+                                { "caption": "Icons", "value": "icons" },
+                                { "caption": "Wochentag", "value": "days" }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "Label",
+                    "caption": " "
+                },
                 {
                     "type": "Label",
                     "caption": "Balken-Dimensionen"
@@ -177,6 +255,11 @@
                         },
                         {
                             "type": "SelectColor",
+                            "name": "ColorRainLabelZero",
+                            "caption": "Regen-Text (0mm)"
+                        },
+                        {
+                            "type": "SelectColor",
                             "name": "ColorRainChance",
                             "caption": "Regen-%"
                         },
@@ -216,7 +299,7 @@
             "items": [
                 {
                     "type": "Label",
-                    "caption": "Hier die Variablen manuell zuweisen. Funktioniert mit jedem Wetter-Modul (OpenWeather, WeatherUnderground, Weatherbit, etc.). Bei OpenWeather werden die Felder automatisch befuellt."
+                    "caption": "Hier die Variablen manuell zuweisen. Funktioniert mit jedem Wetter-Modul (OpenWeather, WeatherUnderground, Weatherbit, etc.). Bei Auto-Erkennung werden die Felder automatisch befuellt."
                 },
                 {
                     "type": "ExpansionPanel",

@@ -9,7 +9,7 @@ declare(strict_types=1);
  * Temperaturbalken, Niederschlag, Wind, animierte Icons.
  *
  * Universell einsetzbar mit jedem Wetter-Modul (OpenWeather, WeatherUnderground, etc.)
- * Variablen können manuell oder per Auto-Erkennung (OpenWeather) zugewiesen werden.
+ * Variablen können manuell oder per Auto-Erkennung zugewiesen werden.
  *
  * Konfigurierbar über die IPS-Modulkonfiguration.
  * Ausgabe als HTMLBox-Variable für WebFront / IPSView.
@@ -41,22 +41,63 @@ class WeatherWidget extends IPSModuleStrict
     private const ICON_BASE = 'https://cdn.jsdelivr.net/gh/basmilius/weather-icons@dev/production/fill/svg';
     private const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
-    // OpenWeatherOneCall Ident-Mapping: Widget-Feld → mögliche Ident-Prefixes (verschiedene Modul-Versionen)
-    private const OWM_IDENT_MAP = [
-        'Begin'     => ['DailyForecastBegin', 'Daily_Timestamp'],
-        'TempMin'   => ['DailyForecastTemperatureMin', 'Daily_TempMin'],
-        'TempMax'   => ['DailyForecastTemperatureMax', 'Daily_TempMax'],
-        'Icon'      => ['DailyForecastConditionIcon', 'Daily_ConditionIcon'],
-        'RainMM'    => ['DailyForecastRain', 'Daily_Rain'],
-        'RainPct'   => ['DailyForecastRainProbability', 'Daily_RainProbability'],
-        'WindSpeed'  => ['DailyForecastWindSpeed', 'Daily_WindSpeed'],
+    // Ident-Mapping: Widget-Feld → mögliche Ident-Prefixes (OpenWeather + WeatherUnderground + generisch)
+    private const IDENT_MAP = [
+        'Begin'     => [
+            // OpenWeather
+            'DailyForecastBegin', 'Daily_Timestamp',
+            // WeatherUnderground / generisch
+            'ForecastBegin', 'Forecast_Begin', 'ForecastTimestamp', 'Forecast_Timestamp',
+        ],
+        'TempMin'   => [
+            'DailyForecastTemperatureMin', 'Daily_TempMin',
+            'ForecastTemperatureMin', 'ForecastTemperatureLow', 'ForecastTempMin', 'ForecastTempLow',
+            'Forecast_TempMin', 'Forecast_TempLow', 'Forecast_TemperatureMin', 'Forecast_TemperatureLow',
+            'ForecastMinTemperature', 'Forecast_MinTemperature', 'ForecastLowTemperature',
+        ],
+        'TempMax'   => [
+            'DailyForecastTemperatureMax', 'Daily_TempMax',
+            'ForecastTemperatureMax', 'ForecastTemperatureHigh', 'ForecastTempMax', 'ForecastTempHigh',
+            'Forecast_TempMax', 'Forecast_TempHigh', 'Forecast_TemperatureMax', 'Forecast_TemperatureHigh',
+            'ForecastMaxTemperature', 'Forecast_MaxTemperature', 'ForecastHighTemperature',
+        ],
+        'Icon'      => [
+            'DailyForecastConditionIcon', 'Daily_ConditionIcon',
+            'ForecastConditionIcon', 'ForecastIcon', 'Forecast_Icon', 'Forecast_ConditionIcon',
+            'ForecastCondition', 'Forecast_Condition',
+        ],
+        'RainMM'    => [
+            'DailyForecastRain', 'Daily_Rain',
+            'ForecastRain', 'Forecast_Rain', 'ForecastPrecipitation', 'Forecast_Precipitation',
+            'ForecastRainAmount', 'Forecast_RainAmount',
+        ],
+        'RainPct'   => [
+            'DailyForecastRainProbability', 'Daily_RainProbability',
+            'ForecastRainProbability', 'Forecast_RainProbability',
+            'ForecastChanceOfRain', 'Forecast_ChanceOfRain',
+            'ForecastPOP', 'Forecast_POP',
+            'ForecastPrecipitationChance', 'Forecast_PrecipitationChance',
+        ],
+        'WindSpeed'  => [
+            'DailyForecastWindSpeed', 'Daily_WindSpeed',
+            'ForecastWindSpeed', 'Forecast_WindSpeed', 'ForecastWind', 'Forecast_Wind',
+        ],
+    ];
+
+    // Mögliche Tag-Suffixe für Auto-Erkennung (Day 0, 1, 2, ...)
+    private const DAY_SUFFIX_FORMATS = [
+        '_%02d',    // _00, _01, _02
+        '_D%d',     // _D0, _D1, _D2
+        '_%d',      // _0, _1, _2
+        '_Day%d',   // _Day0, _Day1
+        'Day%d_',   // Day0_, Day1_ (prefix-style, wird als Suffix angehängt)
     ];
 
     public function Create(): void
     {
         parent::Create();
 
-        // OpenWeather Quell-Instanz für Auto-Erkennung
+        // Quell-Instanz für Auto-Erkennung
         $this->RegisterPropertyInteger('SourceInstance', 0);
         $this->RegisterPropertyInteger('StartDay', 0); // 0=D0 (heute), 1=D1 (morgen)
 
@@ -66,6 +107,13 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyBoolean('ShowRain', true);
         $this->RegisterPropertyBoolean('ShowWind', true);
 
+        // Zeilen-Reihenfolge (von oben nach unten)
+        $this->RegisterPropertyString('RowPos1', 'temp');
+        $this->RegisterPropertyString('RowPos2', 'rain');
+        $this->RegisterPropertyString('RowPos3', 'wind');
+        $this->RegisterPropertyString('RowPos4', 'icons');
+        $this->RegisterPropertyString('RowPos5', 'days');
+
         // Balken-Darstellung
         $this->RegisterPropertyInteger('RainBarHeight', 30);
         $this->RegisterPropertyInteger('RainBarWidth', 70);
@@ -73,11 +121,12 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyInteger('WindBarWidth', 70);
         $this->RegisterPropertyInteger('IconSize', 50);
 
-        // Farben (Hex ohne #)
+        // Farben
         $this->RegisterPropertyInteger('ColorTempMax', 0xFFFFFF);
         $this->RegisterPropertyInteger('ColorTempMin', 0xFFFFFF);
         $this->RegisterPropertyInteger('ColorToday', 0xF5C842);
         $this->RegisterPropertyInteger('ColorRainLabel', 0xFFFFFF);
+        $this->RegisterPropertyInteger('ColorRainLabelZero', 0x6E7681);
         $this->RegisterPropertyInteger('ColorRainChance', 0x9EA7B1);
         $this->RegisterPropertyInteger('ColorRainBar', 0x2F81F7);
         $this->RegisterPropertyInteger('ColorWindLabel', 0xFFFFFF);
@@ -186,6 +235,7 @@ class WeatherWidget extends IPSModuleStrict
     /**
      * Auto-Erkennung durchführen und Variablen direkt setzen
      * Sucht flexibel nach passenden Idents per Keyword-Matching
+     * Funktioniert mit OpenWeather, WeatherUnderground und ähnlichen Modulen
      * Aufrufbar via WTR_AutoConfigure($InstanceID)
      */
     public function AutoConfigure(): string
@@ -213,14 +263,17 @@ class WeatherWidget extends IPSModuleStrict
 
         for ($i = 1; $i <= $dayCount; $i++) {
             $owmDay = $startDay + ($i - 1);
-            // Verschiedene Suffix-Formate: _00, _01 (zweistellig) und _D0, _D1
+
+            // Verschiedene Suffix-Formate für Tag-Nummern
             $suffixes = [
                 '_' . str_pad((string) $owmDay, 2, '0', STR_PAD_LEFT),  // _00, _01, _02
                 '_D' . $owmDay,                                            // _D0, _D1, _D2
+                '_' . $owmDay,                                             // _0, _1, _2
+                '_Day' . $owmDay,                                          // _Day0, _Day1
             ];
 
             // Für jedes Widget-Feld die passende Variable suchen
-            foreach (self::OWM_IDENT_MAP as $field => $identPatterns) {
+            foreach (self::IDENT_MAP as $field => $identPatterns) {
                 $propName = "Day{$i}_{$field}";
                 $varID = false;
 
@@ -247,10 +300,13 @@ class WeatherWidget extends IPSModuleStrict
         // Änderungen anwenden
         IPS_ApplyChanges($this->InstanceID);
 
-        $total = $dayCount * count(self::OWM_IDENT_MAP);
+        $total = $dayCount * count(self::IDENT_MAP);
         $msg = "{$foundCount} von {$total} Variablen automatisch zugewiesen.";
         if (!empty($missingList)) {
             $msg .= "\nNicht gefunden:\n- " . implode("\n- ", $missingList);
+        }
+        if ($foundCount < $total) {
+            $msg .= "\n\nTipp: Mit 'Idents anzeigen' die verfügbaren Idents prüfen und ggf. manuell zuweisen.";
         }
 
         $this->SendDebug('AutoConfigure', $msg, 0);
@@ -336,6 +392,27 @@ class WeatherWidget extends IPSModuleStrict
     }
 
     /**
+     * Zeilen-Reihenfolge aus Properties lesen
+     */
+    private function GetRowOrder(): array
+    {
+        $order = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $row = $this->ReadPropertyString("RowPos{$i}");
+            if ($row !== '' && !in_array($row, $order, true)) {
+                $order[] = $row;
+            }
+        }
+        // Falls Einträge fehlen, Defaults anhängen
+        foreach (['temp', 'rain', 'wind', 'icons', 'days'] as $default) {
+            if (!in_array($default, $order, true)) {
+                $order[] = $default;
+            }
+        }
+        return $order;
+    }
+
+    /**
      * Komplettes HTML generieren
      */
     private function GenerateHTML(array $days, bool $showRain, bool $showWind): string
@@ -348,16 +425,17 @@ class WeatherWidget extends IPSModuleStrict
         $iconSize = $this->ReadPropertyInteger('IconSize');
 
         // Farben lesen
-        $cTempMax    = $this->IntToHex($this->ReadPropertyInteger('ColorTempMax'));
-        $cTempMin    = $this->IntToHex($this->ReadPropertyInteger('ColorTempMin'));
-        $cToday      = $this->IntToHex($this->ReadPropertyInteger('ColorToday'));
-        $cRainLabel  = $this->IntToHex($this->ReadPropertyInteger('ColorRainLabel'));
-        $cRainChance = $this->IntToHex($this->ReadPropertyInteger('ColorRainChance'));
-        $cRainBar    = $this->IntToHex($this->ReadPropertyInteger('ColorRainBar'));
-        $cWindLabel  = $this->IntToHex($this->ReadPropertyInteger('ColorWindLabel'));
-        $cWindBar    = $this->IntToHex($this->ReadPropertyInteger('ColorWindBar'));
-        $cDayLabel   = $this->IntToHex($this->ReadPropertyInteger('ColorDayLabel'));
-        $cTempBar    = $this->IntToHex($this->ReadPropertyInteger('ColorTempBar'));
+        $cTempMax       = $this->IntToHex($this->ReadPropertyInteger('ColorTempMax'));
+        $cTempMin       = $this->IntToHex($this->ReadPropertyInteger('ColorTempMin'));
+        $cToday         = $this->IntToHex($this->ReadPropertyInteger('ColorToday'));
+        $cRainLabel     = $this->IntToHex($this->ReadPropertyInteger('ColorRainLabel'));
+        $cRainLabelZero = $this->IntToHex($this->ReadPropertyInteger('ColorRainLabelZero'));
+        $cRainChance    = $this->IntToHex($this->ReadPropertyInteger('ColorRainChance'));
+        $cRainBar       = $this->IntToHex($this->ReadPropertyInteger('ColorRainBar'));
+        $cWindLabel     = $this->IntToHex($this->ReadPropertyInteger('ColorWindLabel'));
+        $cWindBar       = $this->IntToHex($this->ReadPropertyInteger('ColorWindBar'));
+        $cDayLabel      = $this->IntToHex($this->ReadPropertyInteger('ColorDayLabel'));
+        $cTempBar       = $this->IntToHex($this->ReadPropertyInteger('ColorTempBar'));
 
         // Globale Min/Max berechnen
         $globalMin = PHP_FLOAT_MAX;
@@ -376,7 +454,7 @@ class WeatherWidget extends IPSModuleStrict
         $updateTime = date('d.m. H:i');
 
         // CSS bauen
-        $css = $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW, $iconSize, $cTempMax, $cTempMin, $cToday, $cRainLabel, $cRainChance, $cRainBar, $cWindLabel, $cWindBar, $cDayLabel, $cTempBar);
+        $css = $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW, $iconSize, $cTempMax, $cTempMin, $cToday, $cRainLabel, $cRainLabelZero, $cRainChance, $cRainBar, $cWindLabel, $cWindBar, $cDayLabel, $cTempBar);
 
         // HTML zusammenbauen
         $html = '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">';
@@ -388,8 +466,42 @@ class WeatherWidget extends IPSModuleStrict
         $html .= "<div class=\"header\"><span class=\"last-update\">{$updateTime}</span></div>";
         $html .= '<div class="widget"><div class="weather-grid">';
 
-        // === Temperaturbalken ===
-        $html .= '<div class="bars-area">';
+        // === Zeilen in konfigurierter Reihenfolge rendern ===
+        $rowOrder = $this->GetRowOrder();
+        foreach ($rowOrder as $row) {
+            switch ($row) {
+                case 'temp':
+                    $html .= $this->RenderTempBars($days, $globalMax, $globalRange);
+                    break;
+                case 'rain':
+                    if ($showRain) {
+                        $html .= $this->RenderRainRow($days, $maxRain);
+                    }
+                    break;
+                case 'wind':
+                    if ($showWind) {
+                        $html .= $this->RenderWindRow($days, $maxWind);
+                    }
+                    break;
+                case 'icons':
+                    $html .= $this->RenderIconRow($days);
+                    break;
+                case 'days':
+                    $html .= $this->RenderDayRow($days);
+                    break;
+            }
+        }
+
+        $html .= '</div></div></body></html>';
+        return $html;
+    }
+
+    /**
+     * Temperaturbalken rendern
+     */
+    private function RenderTempBars(array $days, float $globalMax, float $globalRange): string
+    {
+        $html = '<div class="bars-area">';
         foreach ($days as $day) {
             $today = $this->IsToday($day['begin']);
             $topPct = round(($globalMax - $day['tMax']) / $globalRange * 100, 2);
@@ -404,45 +516,65 @@ class WeatherWidget extends IPSModuleStrict
             $html .= '</div></div>';
         }
         $html .= '</div>';
+        return $html;
+    }
 
-        // === Regen ===
-        if ($showRain) {
-            $html .= '<div class="rain-row">';
-            foreach ($days as $day) {
-                $pct = min(100, round($day['rainMM'] / $maxRain * 100, 1));
-                $zCls = $day['rainMM'] == 0 ? ' zero' : '';
-                $html .= '<div class="rain-cell">';
-                $html .= "<div class=\"rain-label{$zCls}\">" . round($day['rainMM'], 1) . 'mm</div>';
-                $html .= '<div class="rain-chance">' . round($day['rainPct']) . '%</div>';
-                $html .= "<div class=\"rain-bar-track\"><div class=\"rain-bar-fill\" style=\"height:{$pct}%\"></div></div>";
-                $html .= '</div>';
-            }
+    /**
+     * Regen-Zeile rendern
+     */
+    private function RenderRainRow(array $days, float $maxRain): string
+    {
+        $html = '<div class="rain-row">';
+        foreach ($days as $day) {
+            $pct = min(100, round($day['rainMM'] / $maxRain * 100, 1));
+            $zCls = $day['rainMM'] == 0 ? ' zero' : '';
+            $html .= '<div class="rain-cell">';
+            $html .= "<div class=\"rain-label{$zCls}\">" . round($day['rainMM'], 1) . 'mm</div>';
+            $html .= '<div class="rain-chance">' . round($day['rainPct']) . '%</div>';
+            $html .= "<div class=\"rain-bar-track\"><div class=\"rain-bar-fill\" style=\"height:{$pct}%\"></div></div>";
             $html .= '</div>';
         }
+        $html .= '</div>';
+        return $html;
+    }
 
-        // === Wind ===
-        if ($showWind) {
-            $html .= '<div class="wind-row">';
-            foreach ($days as $day) {
-                $pct = min(100, round($day['windSpeed'] / $maxWind * 100, 1));
-                $html .= '<div class="wind-cell">';
-                $html .= '<div class="wind-label">' . round($day['windSpeed']) . ' km/h</div>';
-                $html .= "<div class=\"wind-bar-track\"><div class=\"wind-bar-fill\" style=\"height:{$pct}%\"></div></div>";
-                $html .= '</div>';
-            }
+    /**
+     * Wind-Zeile rendern
+     */
+    private function RenderWindRow(array $days, float $maxWind): string
+    {
+        $html = '<div class="wind-row">';
+        foreach ($days as $day) {
+            $pct = min(100, round($day['windSpeed'] / $maxWind * 100, 1));
+            $html .= '<div class="wind-cell">';
+            $html .= '<div class="wind-label">' . round($day['windSpeed']) . ' km/h</div>';
+            $html .= "<div class=\"wind-bar-track\"><div class=\"wind-bar-fill\" style=\"height:{$pct}%\"></div></div>";
             $html .= '</div>';
         }
+        $html .= '</div>';
+        return $html;
+    }
 
-        // === Icons ===
-        $html .= '<div class="icon-row">';
+    /**
+     * Icon-Zeile rendern
+     */
+    private function RenderIconRow(array $days): string
+    {
+        $html = '<div class="icon-row">';
         foreach ($days as $day) {
             $url = $this->GetIconUrl($day['icon']);
             $html .= "<div class=\"icon-cell\"><img class=\"weather-icon\" src=\"{$url}\" alt=\"Wetter\" loading=\"lazy\"></div>";
         }
         $html .= '</div>';
+        return $html;
+    }
 
-        // === Wochentage ===
-        $html .= '<div class="day-row">';
+    /**
+     * Wochentag-Zeile rendern
+     */
+    private function RenderDayRow(array $days): string
+    {
+        $html = '<div class="day-row">';
         foreach ($days as $day) {
             $today = $this->IsToday($day['begin']);
             $wd = self::WEEKDAYS[(int) date('w', $day['begin'])];
@@ -450,15 +582,13 @@ class WeatherWidget extends IPSModuleStrict
             $html .= "<div class=\"day-cell{$cls}\">{$wd}</div>";
         }
         $html .= '</div>';
-
-        $html .= '</div></div></body></html>';
         return $html;
     }
 
     /**
      * CSS mit konfigurierbaren Dimensionen und Farben
      */
-    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW, int $iconPx, string $cTMax, string $cTMin, string $cToday, string $cRainL, string $cRainC, string $cRainB, string $cWindL, string $cWindB, string $cDayL, string $cTempB): string
+    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW, int $iconPx, string $cTMax, string $cTMin, string $cToday, string $cRainL, string $cRainLZ, string $cRainC, string $cRainB, string $cWindL, string $cWindB, string $cDayL, string $cTempB): string
     {
         return <<<CSS
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
@@ -479,7 +609,7 @@ body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:1
 .rain-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(4px,0.8vh,8px) 0 clamp(2px,0.3vh,4px);gap:clamp(2px,0.5vw,6px)}
 .rain-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(2px,0.3vh,4px)}
 .rain-label{font-size:clamp(9px,min(1.8vw,2.2vh),15px);font-weight:600;color:{$cRainL};line-height:1}
-.rain-label.zero{color:#6e7681}
+.rain-label.zero{color:{$cRainLZ}}
 .rain-chance{font-size:clamp(7px,min(1.4vw,1.8vh),12px);font-weight:400;color:{$cRainC};line-height:1}
 .rain-bar-track{width:{$rW}%;height:{$rH}px;background:rgba(255,255,255,0.06);position:relative;overflow:hidden}
 .rain-bar-fill{position:absolute;bottom:0;left:0;width:100%;background:{$cRainB}}
