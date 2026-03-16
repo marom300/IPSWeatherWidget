@@ -611,15 +611,18 @@ class WeatherWidget extends IPSModuleStrict
 
             if (!isset($dailyData[$dayKey])) {
                 $dailyData[$dayKey] = [
-                    'date'      => $dayKey,
-                    'begin'     => strtotime($dayKey . ' 00:00:00'),
-                    'temps'     => [],
-                    'tempMin'   => PHP_FLOAT_MAX,
-                    'tempMax'   => PHP_FLOAT_MIN,
-                    'rainTotal' => 0.0,
-                    'rainPct'   => 0.0,
-                    'windMax'   => 0.0,
-                    'icon'      => '',
+                    'date'        => $dayKey,
+                    'begin'       => strtotime($dayKey . ' 00:00:00'),
+                    'temps'       => [],
+                    'tempMin'     => PHP_FLOAT_MAX,
+                    'tempMax'     => PHP_FLOAT_MIN,
+                    'rainTotal'   => 0.0,
+                    'rainPct'     => 0.0,
+                    'hasProbData' => false,  // Ob API Wahrscheinlichkeitsdaten liefert
+                    'rainHours'   => 0,      // Stunden mit Niederschlag > 0
+                    'totalHours'  => 0,      // Gesamte Stunden mit Daten
+                    'windMax'     => 0.0,
+                    'icon'        => '',
                 ];
             }
 
@@ -643,19 +646,26 @@ class WeatherWidget extends IPSModuleStrict
                 }
             }
 
-            // Niederschlag: aus next_1_hours summieren, fallback next_6_hours
+            // Niederschlag: aus next_1_hours summieren + Stunden zählen
             if (isset($entry['data']['next_1_hours']['details']['precipitation_amount'])) {
-                $dailyData[$dayKey]['rainTotal'] += $entry['data']['next_1_hours']['details']['precipitation_amount'];
+                $precip = $entry['data']['next_1_hours']['details']['precipitation_amount'];
+                $dailyData[$dayKey]['rainTotal'] += $precip;
+                $dailyData[$dayKey]['totalHours']++;
+                if ($precip > 0) {
+                    $dailyData[$dayKey]['rainHours']++;
+                }
             }
 
-            // Regenwahrscheinlichkeit: Maximum des Tages
+            // Regenwahrscheinlichkeit: Maximum des Tages (nur in nordischer Region verfügbar)
             if (isset($entry['data']['next_1_hours']['details']['probability_of_precipitation'])) {
+                $dailyData[$dayKey]['hasProbData'] = true;
                 $dailyData[$dayKey]['rainPct'] = max(
                     $dailyData[$dayKey]['rainPct'],
                     $entry['data']['next_1_hours']['details']['probability_of_precipitation']
                 );
             }
             if (isset($entry['data']['next_6_hours']['details']['probability_of_precipitation'])) {
+                $dailyData[$dayKey]['hasProbData'] = true;
                 $dailyData[$dayKey]['rainPct'] = max(
                     $dailyData[$dayKey]['rainPct'],
                     $entry['data']['next_6_hours']['details']['probability_of_precipitation']
@@ -696,6 +706,16 @@ class WeatherWidget extends IPSModuleStrict
                         break;
                     }
                 }
+            }
+        }
+        unset($day);
+
+        // Regenwahrscheinlichkeit ableiten, wenn API keine Daten liefert (außerhalb Skandinavien)
+        foreach ($dailyData as $dayKey => &$day) {
+            if (!$day['hasProbData'] && $day['totalHours'] > 0) {
+                // Anteil der Stunden mit Niederschlag als Wahrscheinlichkeit
+                // z.B. 6 von 24 Stunden Regen → 25% Wahrscheinlichkeit
+                $day['rainPct'] = round(($day['rainHours'] / $day['totalHours']) * 100, 0);
             }
         }
         unset($day);
