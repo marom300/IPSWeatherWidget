@@ -1354,7 +1354,7 @@ body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:1
 .weather-grid{flex:1;display:flex;flex-direction:column;min-height:0}
 .bars-area{flex:1;display:grid;grid-template-columns:repeat({$cols},1fr);position:relative;min-height:0}
 .bar-col{display:flex;flex-direction:column;align-items:center;position:relative}
-.bar-unit{position:absolute;display:flex;flex-direction:column;align-items:center;gap:clamp(calc(2px*var(--s)),0.4vh,calc(4px*var(--s)));width:100%}
+.bar-unit{position:absolute;display:flex;flex-direction:column;align-items:center;gap:clamp(calc(2px*var(--s)),0.4vh,calc(4px*var(--s)));width:100%;min-height:clamp(calc(40px*var(--s)),8vh,calc(60px*var(--s)))}
 .temp-label-max{font-size:clamp(calc(10px*var(--s)),min(2.2vw,2.8vh),calc(18px*var(--s)));font-weight:600;color:{$cTMax};line-height:1;text-align:center}
 .bar-col.today .temp-label-max{color:{$cToday}}
 .bar-track{width:clamp(calc(5px*var(--s)),min(1.2vw,1.5vh),calc(10px*var(--s)));flex:1;min-height:calc(4px*var(--s));background:rgba(255,255,255,0.08);border-radius:100px;position:relative;overflow:hidden}
