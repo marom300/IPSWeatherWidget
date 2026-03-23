@@ -678,13 +678,21 @@ class WeatherWidget extends IPSModuleStrict
                 }
             }
 
-            // Niederschlag: aus next_1_hours summieren + Stunden zählen
+            // Niederschlag: aus next_1_hours summieren, Fallback auf next_6_hours
+            // MET Norway liefert next_1_hours nur für ~2-3 Tage, danach nur next_6_hours
             if (isset($entry['data']['next_1_hours']['details']['precipitation_amount'])) {
                 $precip = $entry['data']['next_1_hours']['details']['precipitation_amount'];
                 $dailyData[$dayKey]['rainTotal'] += $precip;
                 $dailyData[$dayKey]['totalHours']++;
                 if ($precip > 0) {
                     $dailyData[$dayKey]['rainHours']++;
+                }
+            } elseif (isset($entry['data']['next_6_hours']['details']['precipitation_amount'])) {
+                $precip = $entry['data']['next_6_hours']['details']['precipitation_amount'];
+                $dailyData[$dayKey]['rainTotal'] += $precip;
+                $dailyData[$dayKey]['totalHours'] += 6;
+                if ($precip > 0) {
+                    $dailyData[$dayKey]['rainHours'] += 6;
                 }
             }
 
