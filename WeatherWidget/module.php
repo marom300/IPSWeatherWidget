@@ -174,6 +174,13 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyInteger('WindBarWidth', 70);
         $this->RegisterPropertyInteger('IconSize', 50);
 
+        // Schriftgrößen
+        $this->RegisterPropertyInteger('FontSizeTemp', 14);
+        $this->RegisterPropertyInteger('FontSizeRain', 12);
+        $this->RegisterPropertyInteger('FontSizeRainPct', 10);
+        $this->RegisterPropertyInteger('FontSizeWind', 12);
+        $this->RegisterPropertyInteger('FontSizeDay', 14);
+
         // Farben
         $this->RegisterPropertyInteger('ColorTempMax', 0xFFFFFF);
         $this->RegisterPropertyInteger('ColorTempMin', 0xFFFFFF);
@@ -1165,6 +1172,13 @@ CSS;
         $windBarW = $this->ReadPropertyInteger('WindBarWidth');
         $iconSize = $this->ReadPropertyInteger('IconSize');
 
+        // Schriftgrößen lesen
+        $fsTemp    = $this->ReadPropertyInteger('FontSizeTemp');
+        $fsRain    = $this->ReadPropertyInteger('FontSizeRain');
+        $fsRainPct = $this->ReadPropertyInteger('FontSizeRainPct');
+        $fsWind    = $this->ReadPropertyInteger('FontSizeWind');
+        $fsDay     = $this->ReadPropertyInteger('FontSizeDay');
+
         // Farben lesen
         $cTempMax       = $this->IntToHex($this->ReadPropertyInteger('ColorTempMax'));
         $cTempMin       = $this->IntToHex($this->ReadPropertyInteger('ColorTempMin'));
@@ -1200,7 +1214,7 @@ CSS;
         $widgetBg = ($bgColorInt === -1 || $bgOpacity <= 0) ? 'transparent' : $this->IntToRgba($bgColorInt, $bgOpacity);
 
         // CSS bauen
-        $css = $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW, $iconSize, $cTempMax, $cTempMin, $cToday, $cRainLabel, $cRainLabelZero, $cRainChance, $cRainBar, $cWindLabel, $cWindBar, $cDayLabel, $cTempBar, $widgetBg);
+        $css = $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW, $iconSize, $cTempMax, $cTempMin, $cToday, $cRainLabel, $cRainLabelZero, $cRainChance, $cRainBar, $cWindLabel, $cWindBar, $cDayLabel, $cTempBar, $widgetBg, $fsTemp, $fsRain, $fsRainPct, $fsWind, $fsDay);
 
         // HTML zusammenbauen
         $html = '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">';
@@ -1351,7 +1365,7 @@ CSS;
     /**
      * CSS mit konfigurierbaren Dimensionen und Farben
      */
-    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW, int $iconPx, string $cTMax, string $cTMin, string $cToday, string $cRainL, string $cRainLZ, string $cRainC, string $cRainB, string $cWindL, string $cWindB, string $cDayL, string $cTempB, string $widgetBg = 'transparent'): string
+    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW, int $iconPx, string $cTMax, string $cTMin, string $cToday, string $cRainL, string $cRainLZ, string $cRainC, string $cRainB, string $cWindL, string $cWindB, string $cDayL, string $cTempB, string $widgetBg = 'transparent', int $fsTemp = 14, int $fsRain = 12, int $fsRainPct = 10, int $fsWind = 12, int $fsDay = 14): string
     {
         $widgetBorder = ($widgetBg === 'transparent') ? 'none' : '1px solid rgba(255,255,255,0.06)';
 
@@ -1366,29 +1380,29 @@ body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:1
 .bars-area{flex:1;display:grid;grid-template-columns:repeat({$cols},1fr);position:relative;min-height:0}
 .bar-col{display:flex;flex-direction:column;align-items:center;position:relative}
 .bar-unit{position:absolute;display:flex;flex-direction:column;align-items:center;gap:clamp(calc(2px*var(--s)),0.4vh,calc(4px*var(--s)));width:100%}
-.temp-label-max{font-size:clamp(calc(10px*var(--s)),min(2.2vw,2.8vh),calc(18px*var(--s)));font-weight:600;color:{$cTMax};line-height:1;text-align:center}
+.temp-label-max{font-size:calc({$fsTemp}px*var(--s));font-weight:600;color:{$cTMax};line-height:1;text-align:center}
 .bar-col.today .temp-label-max{color:{$cToday}}
 .bar-track{width:clamp(calc(5px*var(--s)),min(1.2vw,1.5vh),calc(10px*var(--s)));flex:1;min-height:calc(4px*var(--s));background:rgba(255,255,255,0.08);border-radius:100px;position:relative;overflow:hidden}
 .bar-fill{position:absolute;inset:0;border-radius:100px;background:{$cTempB}}
 .bar-col.today .bar-fill{background:{$cToday};box-shadow:0 0 calc(10px*var(--s)) {$cToday}66}
-.temp-label-min{font-size:clamp(calc(10px*var(--s)),min(2.2vw,2.8vh),calc(18px*var(--s)));font-weight:600;color:{$cTMin};line-height:1;text-align:center}
+.temp-label-min{font-size:calc({$fsTemp}px*var(--s));font-weight:600;color:{$cTMin};line-height:1;text-align:center}
 .rain-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(calc(4px*var(--s)),0.8vh,calc(8px*var(--s))) 0 clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s)));gap:clamp(calc(2px*var(--s)),0.5vw,calc(6px*var(--s)))}
 .rain-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s)))}
-.rain-label{font-size:clamp(calc(9px*var(--s)),min(1.8vw,2.2vh),calc(15px*var(--s)));font-weight:600;color:{$cRainL};line-height:1}
+.rain-label{font-size:calc({$fsRain}px*var(--s));font-weight:600;color:{$cRainL};line-height:1}
 .rain-label.zero{color:{$cRainLZ}}
-.rain-chance{font-size:clamp(calc(7px*var(--s)),min(1.4vw,1.8vh),calc(12px*var(--s)));font-weight:400;color:{$cRainC};line-height:1}
+.rain-chance{font-size:calc({$fsRainPct}px*var(--s));font-weight:400;color:{$cRainC};line-height:1}
 .rain-bar-track{width:{$rW}%;height:calc({$rH}px*var(--s));background:rgba(255,255,255,0.06);position:relative;overflow:hidden}
 .rain-bar-fill{position:absolute;bottom:0;left:0;width:100%;background:{$cRainB}}
 .wind-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s))) 0;gap:clamp(calc(2px*var(--s)),0.5vw,calc(6px*var(--s)))}
 .wind-cell{display:flex;flex-direction:column;align-items:center;gap:clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s)))}
-.wind-label{font-size:clamp(calc(9px*var(--s)),min(1.8vw,2.2vh),calc(15px*var(--s)));font-weight:600;color:{$cWindL};line-height:1;white-space:nowrap}
+.wind-label{font-size:calc({$fsWind}px*var(--s));font-weight:600;color:{$cWindL};line-height:1;white-space:nowrap}
 .wind-bar-track{width:{$wW}%;height:calc({$wH}px*var(--s));background:rgba(255,255,255,0.06);position:relative;overflow:hidden}
 .wind-bar-fill{position:absolute;bottom:0;left:0;width:100%;background:{$cWindB}}
 .icon-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(calc(2px*var(--s)),0.4vh,calc(4px*var(--s))) 0}
 .icon-cell{display:flex;justify-content:center}
 .weather-icon{width:calc({$iconPx}px*var(--s));height:calc({$iconPx}px*var(--s));object-fit:contain}
 .day-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s))) 0 0}
-.day-cell{text-align:center;font-size:clamp(calc(10px*var(--s)),min(2.2vw,2.8vh),calc(18px*var(--s)));font-weight:600;color:{$cDayL};text-transform:uppercase;letter-spacing:.5px}
+.day-cell{text-align:center;font-size:calc({$fsDay}px*var(--s));font-weight:600;color:{$cDayL};text-transform:uppercase;letter-spacing:.5px}
 .day-cell.today{color:{$cToday}}
 CSS;
     }

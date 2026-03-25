@@ -271,6 +271,64 @@
                 },
                 {
                     "type": "Label",
+                    "caption": "Schriftgroessen"
+                },
+                {
+                    "type": "RowLayout",
+                    "items": [
+                        {
+                            "type": "NumberSpinner",
+                            "name": "FontSizeTemp",
+                            "caption": "Temperatur (°C)",
+                            "minimum": 8,
+                            "maximum": 30,
+                            "suffix": "px",
+                            "width": "180px"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "FontSizeRain",
+                            "caption": "Niederschlag (mm)",
+                            "minimum": 8,
+                            "maximum": 30,
+                            "suffix": "px",
+                            "width": "180px"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "FontSizeRainPct",
+                            "caption": "Regenwahrsch. (%)",
+                            "minimum": 6,
+                            "maximum": 24,
+                            "suffix": "px",
+                            "width": "180px"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "FontSizeWind",
+                            "caption": "Wind (km/h)",
+                            "minimum": 8,
+                            "maximum": 30,
+                            "suffix": "px",
+                            "width": "180px"
+                        },
+                        {
+                            "type": "NumberSpinner",
+                            "name": "FontSizeDay",
+                            "caption": "Wochentag",
+                            "minimum": 8,
+                            "maximum": 30,
+                            "suffix": "px",
+                            "width": "180px"
+                        }
+                    ]
+                },
+                {
+                    "type": "Label",
+                    "caption": " "
+                },
+                {
+                    "type": "Label",
                     "caption": "Balken-Dimensionen"
                 },
                 {
