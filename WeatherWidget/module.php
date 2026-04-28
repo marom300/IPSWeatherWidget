@@ -149,6 +149,8 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyInteger('UpdateInterval', 5);
         $this->RegisterPropertyBoolean('ShowRain', true);
         $this->RegisterPropertyBoolean('ShowWind', true);
+        $this->RegisterPropertyBoolean('ShowHourly', false);
+        $this->RegisterPropertyInteger('HourlyCount', 24);
         $this->RegisterPropertyBoolean('ShowIconHeader', false);
         $this->RegisterPropertyBoolean('IconHeaderShowDay', true);
         $this->RegisterPropertyBoolean('IconHeaderShowTemp', true);
@@ -166,6 +168,7 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyString('RowPos3', 'wind');
         $this->RegisterPropertyString('RowPos4', 'icons');
         $this->RegisterPropertyString('RowPos5', 'days');
+        $this->RegisterPropertyString('RowPos6', 'hourly');
 
         // Balken-Darstellung
         $this->RegisterPropertyInteger('RainBarHeight', 30);
@@ -180,6 +183,8 @@ class WeatherWidget extends IPSModuleStrict
         $this->RegisterPropertyInteger('FontSizeRainPct', 10);
         $this->RegisterPropertyInteger('FontSizeWind', 12);
         $this->RegisterPropertyInteger('FontSizeDay', 14);
+        $this->RegisterPropertyInteger('FontSizeHourly', 11);
+        $this->RegisterPropertyInteger('HourlyIconSize', 30);
 
         // Farben
         $this->RegisterPropertyInteger('ColorTempMax', 0xFFFFFF);
@@ -793,7 +798,34 @@ class WeatherWidget extends IPSModuleStrict
             $this->SetValueIfExists("MET_D{$dayIndex}_WindSpeed", round($day['windMax'], 1));
         }
 
-        $this->SendDebug('MET Norway', "API-Daten abgerufen: {$dayIndex} Tage verarbeitet", 0);
+        // === Stundendaten extrahieren (für Stundenvorhersage) ===
+        $hourlyCount = $this->ReadPropertyInteger('HourlyCount');
+        $hourlyData = [];
+        $now = time();
+        foreach ($timeseries as $entry) {
+            $utcTime = strtotime($entry['time']);
+            // Nur zukünftige Stunden mit next_1_hours Daten
+            if ($utcTime < $now) {
+                continue;
+            }
+            if (!isset($entry['data']['next_1_hours'])) {
+                continue;
+            }
+            if (count($hourlyData) >= $hourlyCount) {
+                break;
+            }
+            $instant = $entry['data']['instant']['details'] ?? [];
+            $n1 = $entry['data']['next_1_hours'];
+            $hourlyData[] = [
+                'time'   => $utcTime,
+                'temp'   => $instant['air_temperature'] ?? null,
+                'rain'   => $n1['details']['precipitation_amount'] ?? 0,
+                'icon'   => $n1['summary']['symbol_code'] ?? '',
+            ];
+        }
+        $this->SetBuffer('HourlyForecast', json_encode($hourlyData));
+
+        $this->SendDebug('MET Norway', "API-Daten abgerufen: {$dayIndex} Tage, " . count($hourlyData) . " Stunden verarbeitet", 0);
         return "{$dayIndex} Tage erfolgreich abgerufen.";
     }
 
@@ -896,6 +928,10 @@ class WeatherWidget extends IPSModuleStrict
         $icon = '';
         if ($iconID > 0 && IPS_VariableExists($iconID)) {
             $icon = (string) GetValue($iconID);
+            // Tagesvorhersage repräsentiert den ganzen Tag → Night-Codes auf Day forcen,
+            // sonst zeigt das OWM-Modul für Tage in der Zukunft teils Mond-Icons.
+            $icon = preg_replace('/^(\d{2})n$/', '$1d', $icon);              // OWM: 01n → 01d
+            $icon = preg_replace('/_(night|polartwilight)$/', '_day', $icon); // MET Norway: clearsky_night → clearsky_day
         }
 
         $data = [
@@ -1073,14 +1109,14 @@ class WeatherWidget extends IPSModuleStrict
     private function GetRowOrder(): array
     {
         $order = [];
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 6; $i++) {
             $row = $this->ReadPropertyString("RowPos{$i}");
             if ($row !== '' && !in_array($row, $order, true)) {
                 $order[] = $row;
             }
         }
         // Falls Einträge fehlen, Defaults anhängen
-        foreach (['temp', 'rain', 'wind', 'icons', 'days'] as $default) {
+        foreach (['temp', 'rain', 'wind', 'icons', 'days', 'hourly'] as $default) {
             if (!in_array($default, $order, true)) {
                 $order[] = $default;
             }
@@ -1178,6 +1214,9 @@ CSS;
         $fsRainPct = $this->ReadPropertyInteger('FontSizeRainPct');
         $fsWind    = $this->ReadPropertyInteger('FontSizeWind');
         $fsDay     = $this->ReadPropertyInteger('FontSizeDay');
+        $fsHourly  = $this->ReadPropertyInteger('FontSizeHourly');
+        $hIconPx   = $this->ReadPropertyInteger('HourlyIconSize');
+        $showHourly = $this->ReadPropertyBoolean('ShowHourly');
 
         // Farben lesen
         $cTempMax       = $this->IntToHex($this->ReadPropertyInteger('ColorTempMax'));
@@ -1214,7 +1253,7 @@ CSS;
         $widgetBg = ($bgColorInt === -1 || $bgOpacity <= 0) ? 'transparent' : $this->IntToRgba($bgColorInt, $bgOpacity);
 
         // CSS bauen
-        $css = $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW, $iconSize, $cTempMax, $cTempMin, $cToday, $cRainLabel, $cRainLabelZero, $cRainChance, $cRainBar, $cWindLabel, $cWindBar, $cDayLabel, $cTempBar, $widgetBg, $fsTemp, $fsRain, $fsRainPct, $fsWind, $fsDay);
+        $css = $this->BuildCSS($dayCount, $rainBarH, $rainBarW, $windBarH, $windBarW, $iconSize, $cTempMax, $cTempMin, $cToday, $cRainLabel, $cRainLabelZero, $cRainChance, $cRainBar, $cWindLabel, $cWindBar, $cDayLabel, $cTempBar, $widgetBg, $fsTemp, $fsRain, $fsRainPct, $fsWind, $fsDay, $fsHourly, $hIconPx);
 
         // HTML zusammenbauen
         $html = '<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">';
@@ -1248,6 +1287,11 @@ CSS;
                     break;
                 case 'days':
                     $html .= $this->RenderDayRow($days);
+                    break;
+                case 'hourly':
+                    if ($showHourly) {
+                        $html .= $this->RenderHourlyRow();
+                    }
                     break;
             }
         }
@@ -1363,9 +1407,93 @@ CSS;
     }
 
     /**
+     * Stündliche Vorhersage rendern (horizontale Leiste mit SVG-Kurve)
+     */
+    private function RenderHourlyRow(): string
+    {
+        $json = $this->GetBuffer('HourlyForecast');
+        if ($json === '' || $json === '[]') {
+            return '';
+        }
+        $hours = json_decode($json, true);
+        if (empty($hours)) {
+            return '';
+        }
+
+        $count = count($hours);
+        $cellWidth = 55; // Base px pro Stunde (skaliert mit --s)
+
+        // Temp Min/Max für SVG-Kurve berechnen
+        $temps = array_filter(array_column($hours, 'temp'), fn($t) => $t !== null);
+        if (empty($temps)) {
+            return '';
+        }
+        $tMin = min($temps);
+        $tMax = max($temps);
+        $tRange = $tMax - $tMin ?: 1;
+
+        // SVG-Dimensionen
+        $svgW = $count * $cellWidth;
+        $svgH = 80;
+        $padTop = 18; // Platz für Temp-Labels oben
+        $padBot = 4;
+        $chartH = $svgH - $padTop - $padBot;
+
+        // Punkte für Kurve berechnen
+        $points = [];
+        foreach ($hours as $i => $h) {
+            $x = $i * $cellWidth + $cellWidth / 2;
+            $y = $padTop + $chartH - (($h['temp'] - $tMin) / $tRange * $chartH);
+            $points[] = ['x' => round($x, 1), 'y' => round($y, 1), 'temp' => $h['temp']];
+        }
+
+        // SVG-Polyline-String
+        $polyline = implode(' ', array_map(fn($p) => "{$p['x']},{$p['y']}", $points));
+
+        // Area-Pfad (Fläche unter der Kurve)
+        $areaPath = 'M' . $points[0]['x'] . ',' . $svgH;
+        foreach ($points as $p) {
+            $areaPath .= ' L' . $p['x'] . ',' . $p['y'];
+        }
+        $areaPath .= ' L' . $points[$count - 1]['x'] . ',' . $svgH . ' Z';
+
+        $html = '<div class="hourly-row"><div class="hourly-strip">';
+
+        // SVG-Kurve
+        $html .= "<svg class=\"hourly-curve\" viewBox=\"0 0 {$svgW} {$svgH}\" preserveAspectRatio=\"none\">";
+        $html .= "<path class=\"hourly-curve-area\" d=\"{$areaPath}\"/>";
+        $html .= "<polyline class=\"hourly-curve-line\" points=\"{$polyline}\"/>";
+
+        // Temp-Labels an den Kurvenpunkten
+        foreach ($points as $p) {
+            $labelY = $p['y'] - 6;
+            $html .= "<text x=\"{$p['x']}\" y=\"{$labelY}\" text-anchor=\"middle\" fill=\"currentColor\" class=\"hourly-temp\" style=\"font-size:10px;font-family:Inter,sans-serif;font-weight:600\">" . round($p['temp']) . "°</text>";
+        }
+        $html .= '</svg>';
+
+        // Icons + Uhrzeiten
+        $html .= '<div class="hourly-cells">';
+        foreach ($hours as $h) {
+            $time = date('H:i', $h['time']);
+            $html .= '<div class="hourly-cell">';
+            if ($h['icon'] !== '') {
+                $iconCode = $this->MapMETNorwayIcon($h['icon']);
+                $url = $this->GetIconUrl($iconCode);
+                $html .= "<img class=\"hourly-icon\" src=\"{$url}\" alt=\"\" loading=\"lazy\">";
+            }
+            $html .= "<div class=\"hourly-time\">{$time}</div>";
+            $html .= '</div>';
+        }
+        $html .= '</div>';
+
+        $html .= '</div></div>';
+        return $html;
+    }
+
+    /**
      * CSS mit konfigurierbaren Dimensionen und Farben
      */
-    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW, int $iconPx, string $cTMax, string $cTMin, string $cToday, string $cRainL, string $cRainLZ, string $cRainC, string $cRainB, string $cWindL, string $cWindB, string $cDayL, string $cTempB, string $widgetBg = 'transparent', int $fsTemp = 14, int $fsRain = 12, int $fsRainPct = 10, int $fsWind = 12, int $fsDay = 14): string
+    private function BuildCSS(int $cols, int $rH, int $rW, int $wH, int $wW, int $iconPx, string $cTMax, string $cTMin, string $cToday, string $cRainL, string $cRainLZ, string $cRainC, string $cRainB, string $cWindL, string $cWindB, string $cDayL, string $cTempB, string $widgetBg = 'transparent', int $fsTemp = 14, int $fsRain = 12, int $fsRainPct = 10, int $fsWind = 12, int $fsDay = 14, int $fsHourly = 11, int $hIconPx = 30): string
     {
         $widgetBorder = ($widgetBg === 'transparent') ? 'none' : '1px solid rgba(255,255,255,0.06)';
 
@@ -1404,6 +1532,17 @@ body{font-family:'Inter',sans-serif;background:transparent;color:#e6edf3;width:1
 .day-row{display:grid;grid-template-columns:repeat({$cols},1fr);flex-shrink:0;padding:clamp(calc(2px*var(--s)),0.3vh,calc(4px*var(--s))) 0 0}
 .day-cell{text-align:center;font-size:calc({$fsDay}px*var(--s));font-weight:600;color:{$cDayL};text-transform:uppercase;letter-spacing:.5px}
 .day-cell.today{color:{$cToday}}
+.hourly-row{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0;padding:clamp(calc(4px*var(--s)),0.8vh,calc(8px*var(--s))) 0}
+.hourly-row::-webkit-scrollbar{display:none}
+.hourly-strip{display:flex;flex-direction:column;width:max-content;min-width:100%}
+.hourly-curve{width:100%;height:calc(80px*var(--s));display:block}
+.hourly-curve-line{fill:none;stroke:{$cToday};stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.hourly-curve-area{fill:{$cToday}22;stroke:none}
+.hourly-cells{display:flex}
+.hourly-cell{display:flex;flex-direction:column;align-items:center;min-width:calc(55px*var(--s));gap:clamp(calc(1px*var(--s)),0.2vh,calc(3px*var(--s)))}
+.hourly-icon{width:calc({$hIconPx}px*var(--s));height:calc({$hIconPx}px*var(--s));object-fit:contain}
+.hourly-time{font-size:calc({$fsHourly}px*var(--s));color:{$cDayL};font-weight:400;line-height:1}
+.hourly-temp{font-size:calc({$fsHourly}px*var(--s));color:{$cTMax};font-weight:600;line-height:1}
 CSS;
     }
 }
