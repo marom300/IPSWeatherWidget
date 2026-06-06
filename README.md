@@ -44,7 +44,7 @@ Konfigurierbares Wetter-Vorhersage-Widget für IP-Symcon im modernen WaWö-Stil.
 2. Unter **Kern Instanzen → Module** auf **+** klicken
 3. Folgende URL eingeben:
    ```
-   https://github.com/DEIN-USER/IPSWeatherWidget
+   https://github.com/marom300/IPSWeatherWidget
    ```
 4. Instanz hinzufügen: **Gerät hinzufügen → WeatherWidget**
 5. **Wetter-Modul-Typ** und **Quell-Instanz** auswählen
